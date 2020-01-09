@@ -3,12 +3,12 @@
 version: "3"
 services:
   selenium-hub:
-    image: selenium/hub:3.141.59-xenon
+    image: selenium/hub:3.141.59-yttrium
     container_name: selenium-hub
-    ports:
-      - "4444:4444"
+#    ports:
+#      - "4444:4444"
   chrome:
-    image: selenium/node-chrome:3.141.59-xenon
+    image: selenium/node-chrome:3.141.59-yttrium
     volumes:
       - /dev/shm:/dev/shm
     depends_on:
@@ -16,8 +16,11 @@ services:
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
-  my-tests:
+  insta-actor:
     image: shady333/instaactor:v0.1
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
     command: >
       exec:java -Dexec.mainClass=com.dudar.runner.Runner
 
