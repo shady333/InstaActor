@@ -22,18 +22,20 @@ public class Runner {
 
     public static void main(String[] args){
 
+        boolean debug = true;
+
         RemoteWebDriver driver;
 
         List<String> hashTags = new ArrayList<>();
 
-        boolean debug = false;
+
 
         //Read configuration file
         String confFilePath = args[0];
-
+        Properties prop = new Properties();
         try (InputStream input = new FileInputStream(confFilePath)) {
 
-            Properties prop = new Properties();
+
 
             // load a properties file
             prop.load(input);
@@ -78,17 +80,21 @@ public class Runner {
             driver = new ChromeDriver();
         }
 
-        System.out.println("I'm working");
+        System.out.println("Starting");
 
         WebDriverRunner.setWebDriver(driver);
 
-        open("https://google.com");
-        sleep(3000);
+        //open("https://google.com");
+        //sleep(3000);
 
         System.out.println(WebDriverRunner.getWebDriver().getTitle());
 
         InstaActor actor = new InstaActor();
-        actor.start();
+        actor.setLogin(prop.getProperty("acc.user"))
+                .setPassword(prop.getProperty("acc.password"))
+                .loadTags(hashTags)
+                .build()
+        .start();
 
         clearBrowserLocalStorage();
         close();
