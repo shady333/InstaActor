@@ -1,13 +1,20 @@
 package com.dudar.runner;
 
 import com.codeborne.selenide.WebDriverRunner;
+import com.dudar.InstaActor;
 import com.dudar.utils.Utilities;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 import static com.codeborne.selenide.Selenide.*;
 
@@ -17,11 +24,35 @@ public class Runner {
 
         RemoteWebDriver driver;
 
+        List<String> hashTags = new ArrayList<>();
+
         boolean debug = false;
 
+        //Read configuration file
+        String confFilePath = args[0];
+
+        try (InputStream input = new FileInputStream(confFilePath)) {
+
+            Properties prop = new Properties();
+
+            // load a properties file
+            prop.load(input);
+
+            // get the property value and print it out
+            System.out.println(prop.getProperty("hub.host"));
+            System.out.println(prop.getProperty("hub.port"));
+            System.out.println(prop.getProperty("acc.user"));
+            System.out.println(prop.getProperty("acc.password"));
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
 
+        //read all tags
+        hashTags = Utilities.getAllTags(args[1]);
 
+        hashTags.forEach(el -> System.out.println(el));
 
         if(!debug) {
 
@@ -55,6 +86,9 @@ public class Runner {
         sleep(3000);
 
         System.out.println(WebDriverRunner.getWebDriver().getTitle());
+
+        InstaActor actor = new InstaActor();
+        actor.start();
 
         clearBrowserLocalStorage();
         close();

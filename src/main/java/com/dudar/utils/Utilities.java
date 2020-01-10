@@ -1,9 +1,17 @@
 package com.dudar.utils;
 
 import com.google.common.base.Strings;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Utilities {
@@ -66,5 +74,24 @@ public class Utilities {
             System.out.println("Terminating execution!!!");
             System.exit(0);
         }
+    }
+
+    //TODO Combine into one List all values from CSV file, if it has more than 1 row
+    public static List<String> getAllTags(String filePath){
+        List<List<String>> records = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader(filePath));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records.add(Arrays.asList(values));
+            }
+            return records.get(0);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CsvValidationException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

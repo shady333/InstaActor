@@ -28,11 +28,13 @@
             <version>1.12.3</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
         <dependency>
-            <groupId>com.rationaleemotions</groupId>
-            <artifactId>talk2grid</artifactId>
-            <version>1.2.1</version>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.0</version>
         </dependency>
+
 
     </dependencies>
 
