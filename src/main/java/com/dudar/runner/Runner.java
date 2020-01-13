@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -45,7 +44,7 @@ public class Runner {
 
         //read all tags
         hashTags = Utilities.getAllTags(args[1]);
-        hashTags.forEach(el -> System.out.println(el));
+        hashTags.forEach(System.out::println);
 
         System.out.println("Starting");
         List<String> currentTags = hashTags;
@@ -83,8 +82,7 @@ public class Runner {
     private static List<String> exceptionClose(List<String> hashTags, InstaActor actor) {
         List<String> currentTags;
         System.out.println("Completed tags:");
-        actor.getCompletedTags().forEach(tag -> System.out.println(tag));
-        actor.getCompletedTags().forEach(tag -> System.out.println(tag));
+        actor.getCompletedTags().forEach(System.out::println);
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
         try{
             clearBrowserLocalStorage();

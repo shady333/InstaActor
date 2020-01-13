@@ -16,10 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 public class Utilities {
 
-    private static boolean gridReady(){
-        return gridReady(null);
-    }
-
     private static boolean gridReady(String urlGrid){
         String gridUrl;
         if(Strings.isNullOrEmpty(urlGrid)){
@@ -36,22 +32,12 @@ public class Utilities {
             connection.connect();
 
             int code = connection.getResponseCode();
-            if(code == 200){
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return code == 200;
         }
         catch (Exception ex){
             System.out.print(".");
             return false;
         }
-    }
-
-    private static void checkGridStatus() {
-        checkGridStatus(null);
     }
 
     public static void checkGridStatus(String hubUrl) {
@@ -65,7 +51,6 @@ public class Utilities {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                ;
             }
         }
         System.out.println();
@@ -79,17 +64,13 @@ public class Utilities {
     //TODO Combine into one List all values from CSV file, if it has more than 1 row
     public static List<String> getAllTags(String filePath){
         List<List<String>> records = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new FileReader(filePath));) {
-            String[] values = null;
+        try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
+            String[] values;
             while ((values = csvReader.readNext()) != null) {
                 records.add(Arrays.asList(values));
             }
             return records.get(0);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CsvValidationException e) {
+        } catch (IOException | CsvValidationException e) {
             e.printStackTrace();
         }
         return null;

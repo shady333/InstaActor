@@ -6,7 +6,6 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
@@ -25,19 +24,18 @@ public class InstaActor {
     private boolean debug = false;
     private boolean likesEnabled = false;
     private int totalLiked = 0;
-    private int maxPostsCount = 50;
+    private final int maxPostsCount = 50;
     private int warningsCounter = 0;
-    private int minViewDelay = 1000;
-    private int maxViewDelay = 5000;
-    private int minVideoDelay = 2000;
-    private int maxVideoDelay = 10000;
-    private int likesPercentage = 90;
+    private final int minViewDelay = 1000;
+    private final int maxViewDelay = 5000;
+    private final int minVideoDelay = 2000;
+    private final int maxVideoDelay = 10000;
+    private final int likesPercentage = 90;
     List<String> tags = new ArrayList<>();
-    List<String> completedTags = new ArrayList<>();
+    final List<String> completedTags = new ArrayList<>();
     private boolean executionError;
 
     public InstaActor(){
-        ;
     }
 
     public List<String> getCompletedTags(){
@@ -55,10 +53,7 @@ public class InstaActor {
     }
 
     public InstaActor enableLikes(String value){
-        if(value.equalsIgnoreCase("true"))
-            this.likesEnabled = true;
-        else
-            this.likesEnabled = false;
+        this.likesEnabled = value.equalsIgnoreCase("true");
         return this;
     }
 
@@ -69,10 +64,6 @@ public class InstaActor {
 
     public InstaActor setPassword(String password){
         this.pass = password;
-        return this;
-    }
-
-    public InstaActor build(){
         return this;
     }
 
@@ -99,12 +90,7 @@ public class InstaActor {
         sleep(getRandonTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
-        try {
-            element.click();
-        }
-        catch (Exception ex){
-            throw ex;
-        }
+        element.click();
         sleep(getRandonTimeout());
     }
 
@@ -142,12 +128,12 @@ public class InstaActor {
         }
     }
 
-    private String detectPostTypeAndAct() {
+    private void detectPostTypeAndAct() {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
                 System.out.println("Post type - Image");
-                return "IMG";
+                return;
             }
             else
             {
@@ -156,7 +142,7 @@ public class InstaActor {
                     System.out.println("Navigate to next image > " + i);
                     mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")));
                 }
-                return "GALLERY";
+                return;
             }
         }
         imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//video[attribute::type='video/mp4']"));
@@ -168,9 +154,7 @@ public class InstaActor {
             videoButton.click();
             sleep(getVideoRandonTimeout());
             videoButton.click();
-            return "VIDEO";
         }
-        return "undefined";
     }
 
     private boolean likePost(){
@@ -223,7 +207,7 @@ public class InstaActor {
                             System.out.println("!!!WARNING!!!");
                             System.out.println("SKIP CURRENT TAG Liking\nBREAK!!!!");
                             System.out.println("Completed tags:");
-                            completedTags.forEach(el -> System.out.println(el));
+                            completedTags.forEach(System.out::println);
                             System.out.println("Total LIKES - " + getTotalLikes());
                             System.out.println("!!!STOP EXECUTION");
 
@@ -251,14 +235,6 @@ public class InstaActor {
             mouseMoveToElementAndClick(nextPostButton);
             sleep(getRandonTimeout());
         }
-    }
-
-    private void emergencyReload(){
-        open("https://instagram.com");
-        $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
-
-        checkIfPopupShown();
     }
 
     private boolean likeComplated = false;
