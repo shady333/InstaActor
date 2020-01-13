@@ -86,9 +86,15 @@ public class Runner {
         actor.getCompletedTags().forEach(tag -> System.out.println(tag));
         actor.getCompletedTags().forEach(tag -> System.out.println(tag));
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
-        clearBrowserLocalStorage();
-        clearBrowserCookies();
-        close();
+        try{
+            clearBrowserLocalStorage();
+            clearBrowserCookies();
+            close();
+        }
+        catch (Exception ex){
+            System.out.println("!!!Can't terminate driver");
+            System.out.println(ex.getLocalizedMessage());
+        }
         sleep(5000);
         return currentTags;
     }

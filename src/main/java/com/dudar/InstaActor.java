@@ -193,13 +193,7 @@ public class InstaActor {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         String likesCollectionElementsLocator =
                 "//article//span[attribute::aria-label='Share Post']/../..//span[attribute::aria-label='Like']";
-//        try {
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
-//        }
-//        catch (AssertionError ex){
-//            System.out.println(ex.getLocalizedMessage());
-//            throw new MyCustomException("asd");
-//        }
         sleep(getRandonTimeout());
 
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
@@ -253,15 +247,8 @@ public class InstaActor {
 
                 }
             }
-//            try {
-                WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
-                mouseMoveToElementAndClick(nextPostButton);
-//            }
-//            catch (Exception ex){
-//                System.out.println("!!!No next button");
-//                return;
-//            }
-
+            WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
+            mouseMoveToElementAndClick(nextPostButton);
             sleep(getRandonTimeout());
         }
     }
@@ -278,7 +265,6 @@ public class InstaActor {
 
     public void start(){
         while(!likeComplated) {
-//            try {
                 authentificate();
 
                 $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
@@ -298,45 +284,21 @@ public class InstaActor {
                         System.out.println("Search Tag - " + searchTag);
                         System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                         tagCounter.getAndIncrement();
-//                        try {
                             if (searchByTag(searchTag)) {
-//                                try {
                                     likePosts(maxPostsCount);
-//                                }
-//                                 catch (AssertionError ex){
-//                                        System.out.println(ex.getLocalizedMessage());
-////                                        throw new MyCustomException("asd");
-//                                    }
                                 WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
                                 mouseMoveToElementAndClick(closeButton);
 
                             }
-//                            completedTags.add(searchTag);
-
-//                        } catch (NoSuchElementException ex) {
-//                            System.out.println("!!!Error occured\n" + ex.getLocalizedMessage());
-//                            emergencyReload();
-//                        }
                     }
                 }
                 likeComplated = true;
-
-//            } catch (AssertionError ex) {
-//                System.out.println("!!!Error on InstActor: " + ex.getLocalizedMessage());
-//                clearBrowserLocalStorage();
-//                clearBrowserCookies();
-//                close();
-//                sleep(10000);
-//                start();
-//            }
 
         }
         System.out.println("*******************************");
         System.out.println("Total likes = " + totalLiked);
 
-//        clearBrowserLocalStorage();
-//        clearBrowserCookies();
-//        close();
+
     }
 
     public int getTotalLikes(){
