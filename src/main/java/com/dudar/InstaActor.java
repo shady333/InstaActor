@@ -6,6 +6,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
@@ -24,17 +25,23 @@ public class InstaActor {
     private boolean debug = false;
     private boolean likesEnabled = false;
     private int totalLiked = 0;
-    private int maxPostsCount = 60;
+    private int maxPostsCount = 50;
     private int warningsCounter = 0;
-    private int minViewDelay = 500;
-    private int maxViewDelay = 2000;
-    private int minVideoDelay = 500;
-    private int maxVideoDelay = 3000;
-    private int likesPercentage = 100;
+    private int minViewDelay = 1000;
+    private int maxViewDelay = 5000;
+    private int minVideoDelay = 2000;
+    private int maxVideoDelay = 10000;
+    private int likesPercentage = 90;
     List<String> tags = new ArrayList<>();
+    List<String> completedTags = new ArrayList<>();
+    private boolean executionError;
 
     public InstaActor(){
         ;
+    }
+
+    public List<String> getCompletedTags(){
+        return this.completedTags;
     }
 
     public InstaActor loadTags(List<String> tagsToLoad){
@@ -47,8 +54,11 @@ public class InstaActor {
         return this;
     }
 
-    public InstaActor enableLikes(){
-        this.likesEnabled = true;
+    public InstaActor enableLikes(String value){
+        if(value.equalsIgnoreCase("true"))
+            this.likesEnabled = true;
+        else
+            this.likesEnabled = false;
         return this;
     }
 
@@ -68,6 +78,7 @@ public class InstaActor {
 
     private void authentificate() {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
+        sleep(3000);
         $(By.name("username")).val(this.login).pressTab();
         $(By.name("password")).val(this.pass).pressEnter();
 
@@ -88,7 +99,12 @@ public class InstaActor {
         sleep(getRandonTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
-        element.click();
+        try {
+            element.click();
+        }
+        catch (Exception ex){
+            throw ex;
+        }
         sleep(getRandonTimeout());
     }
 
@@ -173,11 +189,17 @@ public class InstaActor {
         return result;
     }
 
-    private void likePosts(int maxPostsCount) {
+    private void likePosts(int maxPostsCount){
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         String likesCollectionElementsLocator =
                 "//article//span[attribute::aria-label='Share Post']/../..//span[attribute::aria-label='Like']";
+//        try {
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
+//        }
+//        catch (AssertionError ex){
+//            System.out.println(ex.getLocalizedMessage());
+//            throw new MyCustomException("asd");
+//        }
         sleep(getRandonTimeout());
 
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
@@ -206,6 +228,12 @@ public class InstaActor {
                         if(warningsCounter>2){
                             System.out.println("!!!WARNING!!!");
                             System.out.println("SKIP CURRENT TAG Liking\nBREAK!!!!");
+                            System.out.println("Completed tags:");
+                            completedTags.forEach(el -> System.out.println(el));
+                            System.out.println("Total LIKES - " + getTotalLikes());
+                            System.out.println("!!!STOP EXECUTION");
+
+                            System.exit(1);
                             return;
                         }
                         System.out.println("!!!WARNING!!!");
@@ -225,8 +253,14 @@ public class InstaActor {
 
                 }
             }
-            WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
-            mouseMoveToElementAndClick(nextPostButton);
+//            try {
+                WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
+                mouseMoveToElementAndClick(nextPostButton);
+//            }
+//            catch (Exception ex){
+//                System.out.println("!!!No next button");
+//                return;
+//            }
 
             sleep(getRandonTimeout());
         }
@@ -240,38 +274,72 @@ public class InstaActor {
         checkIfPopupShown();
     }
 
-    public void start() {
-        authentificate();
+    private boolean likeComplated = false;
 
-        $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
+    public void start(){
+        while(!likeComplated) {
+//            try {
+                authentificate();
 
-        checkIfPopupShown();
+                $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
+                $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
 
-        Collections.shuffle(this.tags);
+                checkIfPopupShown();
 
-        int tagsCollectionSize = this.tags.size();
-        AtomicInteger tagCounter = new AtomicInteger(1);
+                Collections.shuffle(this.tags);
 
-        this.tags.forEach(searchTag -> {
-            System.out.println("Search Tag - "+searchTag);
-            System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
-            tagCounter.getAndIncrement();
-            try {
-                if (searchByTag(searchTag)) {
-                    likePosts(maxPostsCount);
-                    WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
-                    mouseMoveToElementAndClick(closeButton);
+                int tagsCollectionSize = this.tags.size();
+                AtomicInteger tagCounter = new AtomicInteger(1);
+
+                for(String searchTag : tags){
+
+                    if (!completedTags.contains(searchTag)) {
+                        completedTags.add(searchTag);
+                        System.out.println("Search Tag - " + searchTag);
+                        System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                        tagCounter.getAndIncrement();
+//                        try {
+                            if (searchByTag(searchTag)) {
+//                                try {
+                                    likePosts(maxPostsCount);
+//                                }
+//                                 catch (AssertionError ex){
+//                                        System.out.println(ex.getLocalizedMessage());
+////                                        throw new MyCustomException("asd");
+//                                    }
+                                WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
+                                mouseMoveToElementAndClick(closeButton);
+
+                            }
+//                            completedTags.add(searchTag);
+
+//                        } catch (NoSuchElementException ex) {
+//                            System.out.println("!!!Error occured\n" + ex.getLocalizedMessage());
+//                            emergencyReload();
+//                        }
+                    }
                 }
+                likeComplated = true;
 
+//            } catch (AssertionError ex) {
+//                System.out.println("!!!Error on InstActor: " + ex.getLocalizedMessage());
+//                clearBrowserLocalStorage();
+//                clearBrowserCookies();
+//                close();
+//                sleep(10000);
+//                start();
+//            }
 
-            }
-            catch (Exception ex){
-                System.out.println("!!!Error occured\n"+ex.getLocalizedMessage());
-                emergencyReload();
-            }
-        });
+        }
         System.out.println("*******************************");
         System.out.println("Total likes = " + totalLiked);
+
+//        clearBrowserLocalStorage();
+//        clearBrowserCookies();
+//        close();
+    }
+
+    public int getTotalLikes(){
+        return this.totalLiked;
     }
 }
