@@ -3,6 +3,7 @@ package com.dudar.runner;
 import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.InstaActor;
 import com.dudar.utils.Utilities;
+import com.google.common.base.Strings;
 import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -22,6 +23,7 @@ import static com.codeborne.selenide.Selenide.*;
 public class Runner {
 
     private static RemoteWebDriver driver;
+    private static Properties prop = new Properties();
 
     public static void main(String[] args){
 
@@ -30,7 +32,7 @@ public class Runner {
 
         //Read configuration file
         String confFilePath = args[0];
-        Properties prop = new Properties();
+
         try (InputStream input = new FileInputStream(confFilePath)) {
             // load a properties file
             prop.load(input);
@@ -51,7 +53,8 @@ public class Runner {
         InstaActor actor = new InstaActor();
         actor.setLogin(prop.getProperty("acc.user"))
                 .setPassword(prop.getProperty("acc.password"))
-                .enableLikes(prop.getProperty("likes.enabled"));
+                .enableLikes(prop.getProperty("likes.enabled"))
+                .enableComments(prop.getProperty("comments.enabled"));
         while(actor.getCompletedTags().size() != hashTags.size())
         {
             try {
@@ -61,7 +64,7 @@ public class Runner {
                         .start();
             }
             catch (AssertionError ex) {
-                System.out.println("!!!SELENIDE ASSERT ERROR");
+                System.out.println(Utilities.getCurrentTimestamp() + "!!!SELENIDE ASSERT ERROR");
                 System.out.println("!!!Error on InstActor: " + ex.getLocalizedMessage());
                 currentTags = exceptionClose(hashTags, actor);
             }
@@ -74,7 +77,10 @@ public class Runner {
         clearBrowserLocalStorage();
         clearBrowserCookies();
         close();
-        System.out.println("Total likes = " + actor.getTotalLikes());
+        System.out.println("Total likes added = " + actor.getTotalLikes());
+        System.out.println("Total comments added = " + actor.getTotalComments());
+        System.out.println("Defected tags");
+        actor.printDefectedTags();
         System.out.println("Shutting down!");
     }
 
@@ -101,6 +107,10 @@ public class Runner {
         if(!debug) {
             String seleniumHub = System.getenv("HUB_HOST");
             String seleniumHubPort = System.getenv("HUB_PORT");
+            if(Strings.isNullOrEmpty(seleniumHub) || Strings.isNullOrEmpty(seleniumHubPort)){
+                seleniumHub = prop.getProperty("hub.host");
+                seleniumHubPort = prop.getProperty("hub.port");
+            }
             String gridHubUrl = "http://" + seleniumHub + ":" + seleniumHubPort;
 
             //Check grid status

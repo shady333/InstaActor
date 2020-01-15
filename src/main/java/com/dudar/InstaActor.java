@@ -4,12 +4,16 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
+import com.dudar.utils.Utilities;
+import com.google.common.base.Strings;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,20 +30,33 @@ public class InstaActor {
     private int totalLiked = 0;
     private final int maxPostsCount = 50;
     private int warningsCounter = 0;
-    private final int minViewDelay = 1000;
+    private final int minViewDelay = 2000;
     private final int maxViewDelay = 5000;
-    private final int minVideoDelay = 2000;
+    private final int minVideoDelay = 3000;
     private final int maxVideoDelay = 10000;
     private final int likesPercentage = 90;
+    private final int commentsPercentage = 50;
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
+    final List<String> defectedTags = new ArrayList<>();
     private boolean executionError;
+    private int totalComments=0;
+    private boolean commentsEnabled;
 
     public InstaActor(){
     }
 
     public List<String> getCompletedTags(){
         return this.completedTags;
+    }
+
+    public void printDefectedTags(){
+        if(defectedTags.size()!=0){
+            defectedTags.forEach(System.out::println);
+        }
+        else{
+            System.out.println(Utilities.getCurrentTimestamp() + "No defected tags");
+        }
     }
 
     public InstaActor loadTags(List<String> tagsToLoad){
@@ -53,7 +70,14 @@ public class InstaActor {
     }
 
     public InstaActor enableLikes(String value){
-        this.likesEnabled = value.equalsIgnoreCase("true");
+        if(!Strings.isNullOrEmpty(value))
+            this.likesEnabled = value.equalsIgnoreCase("true");
+        return this;
+    }
+
+    public InstaActor enableComments(String value){
+        if(!Strings.isNullOrEmpty(value))
+            this.commentsEnabled = value.equalsIgnoreCase("true");
         return this;
     }
 
@@ -124,6 +148,7 @@ public class InstaActor {
         }
         else{
             System.out.println("!!! Can't find  search tag page. Search Tag - "+searchTag);
+            defectedTags.add(searchTag);
             return false;
         }
     }
@@ -161,19 +186,31 @@ public class InstaActor {
         int min = 1;
         int max = 100;
         boolean result;
-        if(ThreadLocalRandom.current().nextInt(min, max + 1) <= likesPercentage) {
-            System.out.println("Like it");
+        if(ThreadLocalRandom.current().nextInt(min, max) <= likesPercentage) {
+            System.out.println(Utilities.getCurrentTimestamp() + "Like it");
             totalLiked++;
             result = true;
         }
         else {
-            System.out.println("Skip post. Do not like it.");
+            System.out.println(Utilities.getCurrentTimestamp() + "Skip post. Do not like it.");
             result = false;
         }
         return result;
     }
 
-    private void likePosts(int maxPostsCount){
+    private boolean commentPost(){
+        int min = 1;
+        int max = 100;
+        boolean result = false;
+        if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
+            System.out.println(Utilities.getCurrentTimestamp() + "Add Comment");
+            totalComments++;
+            result = true;
+        }
+        return result;
+    }
+
+    private void interactWithPosts(int maxPostsCount){
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         String likesCollectionElementsLocator =
                 "//article//span[attribute::aria-label='Share Post']/../..//span[attribute::aria-label='Like']";
@@ -183,9 +220,12 @@ public class InstaActor {
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
         mouseMoveToElementAndClick(firstPostToLike);
 
-        for(int i = 0; i < maxPostsCount; i++){
-            System.out.println(i + ". Current page - " + WebDriverRunner.url());
+        //TODO detect count of available posts. Should not exceed maxPostsCount
+
+        for(int i = 1; i <= maxPostsCount; i++){
+            System.out.println(Utilities.getCurrentTimestamp() + i + ". Current page - " + WebDriverRunner.url());
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
+
             ElementsCollection likesCollection = $$(By.xpath(likesCollectionElementsLocator));
             if(likesCollection.size() > 0){
                 sleep(getRandonTimeout());
@@ -194,47 +234,58 @@ public class InstaActor {
 
                 if(likePost()){
                     System.out.println("!!!LIKE!!!");
-                    if(likesEnabled)
+                    if(likesEnabled) {
                         mouseMoveToElementAndClick(likesCollection.get(0));
-                    else
-                        System.out.println("!!!Liking option is disabled!!!");
-
-                    //suspected actions
-                    ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
-                    if(buttonReport.size() > 0){
-                        warningsCounter++;
-                        if(warningsCounter>2){
-                            System.out.println("!!!WARNING!!!");
-                            System.out.println("SKIP CURRENT TAG Liking\nBREAK!!!!");
-                            System.out.println("Completed tags:");
-                            completedTags.forEach(System.out::println);
-                            System.out.println("Total LIKES - " + getTotalLikes());
-                            System.out.println("!!!STOP EXECUTION");
-
-                            System.exit(1);
+                        if (suspectedActionsDetector(likesCollectionElementsLocator))
                             return;
-                        }
-                        System.out.println("!!!WARNING!!!");
-                        System.out.println("Detected suspicious action detected by service");
-                        buttonReport.get(0).click();
-                        sleep(getRandonTimeout());
-                        likesCollection = $$(By.xpath(likesCollectionElementsLocator));
-                        if(likesCollection.size() > 0) {
-                            System.out.println("Re Like current post");
-                            if(likesEnabled)
-                                mouseMoveToElementAndClick(likesCollection.get(0));
-                            sleep(getRandonTimeout());
-                        }
-                        System.out.println("Switching to next tag for likes");
-                        return;
                     }
-
+                    else{
+                        System.out.println("!!!Likes option is disabled");
+                    }
+                    if(commentsEnabled && commentPost()) {
+                        addCommentToPost();
+                        if (suspectedActionsDetector(likesCollectionElementsLocator))
+                            return;
+                    }
                 }
             }
             WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
             mouseMoveToElementAndClick(nextPostButton);
             sleep(getRandonTimeout());
         }
+    }
+
+    private boolean suspectedActionsDetector(String likesCollectionElementsLocator) {
+        ElementsCollection likesCollection;
+        ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
+        if(buttonReport.size() > 0){
+            warningsCounter++;
+            if(warningsCounter>2){
+                System.out.println(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
+                System.out.println("SKIP CURRENT TAG Liking\nBREAK!!!!");
+                System.out.println("Completed tags:");
+                completedTags.forEach(System.out::println);
+                System.out.println("Total LIKES - " + getTotalLikes());
+                System.out.println("!!!STOP EXECUTION");
+
+                System.exit(1);
+                return true;
+            }
+            System.out.println(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
+            System.out.println("Detected suspicious action detected by service");
+            buttonReport.get(0).click();
+            sleep(getRandonTimeout());
+            likesCollection = $$(By.xpath(likesCollectionElementsLocator));
+            if(likesCollection.size() > 0) {
+                System.out.println("Re Like current post");
+                if(likesEnabled)
+                    mouseMoveToElementAndClick(likesCollection.get(0));
+                sleep(getRandonTimeout());
+            }
+            System.out.println("Switching to next tag for likes");
+            return true;
+        }
+        return false;
     }
 
     private boolean likeComplated = false;
@@ -257,11 +308,11 @@ public class InstaActor {
 
                     if (!completedTags.contains(searchTag)) {
                         completedTags.add(searchTag);
-                        System.out.println("Search Tag - " + searchTag);
+                        System.out.println(Utilities.getCurrentTimestamp() + "Search Tag - " + searchTag);
                         System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                         tagCounter.getAndIncrement();
                             if (searchByTag(searchTag)) {
-                                    likePosts(maxPostsCount);
+                                    interactWithPosts(maxPostsCount);
                                 WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
                                 mouseMoveToElementAndClick(closeButton);
 
@@ -269,15 +320,73 @@ public class InstaActor {
                     }
                 }
                 likeComplated = true;
-
         }
-        System.out.println("*******************************");
-        System.out.println("Total likes = " + totalLiked);
-
-
     }
 
     public int getTotalLikes(){
         return this.totalLiked;
+    }
+
+    public int getTotalComments(){
+        return this.totalComments;
+    }
+
+    private List<String> comments = new ArrayList<>(Arrays.asList(
+//            "Nice\uD83D\uDE4C",
+//            "Nice \uD83D\uDE4C",
+//            "nice\uD83D\uDE4C",
+//            "nice \uD83D\uDE4C",
+//            "\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F",
+//            "Looks awesome ️\uD83D\uDE4C\uD83D\uDE0E",
+//            "looks awesome️\uD83D\uDE4C\uD83D\uDE0E",
+//            "it's awesome ️\uD83D\uDE4C \uD83D\uDE0E",
+//            "awesome\uD83D\uDE0E",
+//            "awesome \uD83D\uDE0E !!!",
+//            "\uD83D\uDC4D\uD83C\uDFFB\uD83D\uDC4D\uD83C\uDFFB\uD83D\uDC4D\uD83C\uDFFB",
+            "Nice shot!!!",
+            "Nice shot!!",
+            "Nice shot!",
+            "good shot !",
+            "Looks great!",
+            "looks great ! ",
+            "Awesome!!",
+            "AWESOME !!!",
+            "awesome !",
+            " awesome ",
+            "I like it",
+            "I like it!",
+            "like it",
+            "realy like",
+            "get my like",
+            "TREU",
+            "true"
+    ));
+
+    private String getComment(){
+        int maxVal = comments.size();
+        int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
+        return comments.get(commentIndex);
+    }
+
+    private void addCommentToPost(){
+            try {
+                String commentText = getComment();
+                System.out.println(commentText);
+                $(By.cssSelector("article textarea")).val(commentText);
+
+                //TODO add emojji support
+                //Commented part for posting emojji, not working yet
+//                String JS_ADD_TEXT_TO_INPUT = "var elm = arguments[0], txt = arguments[1]; elm.value += txt; elm.dispatchEvent(new Event('change'));";
+//                WebElement textBox = $(By.cssSelector("article textarea"));
+//                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
+
+                mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
+                System.out.println("Comment added!!!");
+                totalComments++;
+            } catch (Error err) {
+                System.out.println("ERROR on commenting");
+            } catch (Exception ex) {
+                System.out.println("EXCEPTION on commenting");
+            }
     }
 }

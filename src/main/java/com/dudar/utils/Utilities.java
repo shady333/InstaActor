@@ -9,6 +9,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,5 +76,11 @@ public class Utilities {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getCurrentTimestamp(){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        Instant instant = timestamp.toInstant();
+        return String.valueOf(instant).concat(" : ");
     }
 }
