@@ -1,10 +1,10 @@
-##General info
-Simple application for interactions with Instagram service to emulate user actions such as, "Like" post and comment post.
-Application written in research purpose to evaluate posibility of automation usage on social networks services.
+## General info
+Simple application :alien: for interactions with Instagram service to emulate user actions such as, "Like" :heart: and comment :pencil2: post.
+Application written :computer: in research purpose to evaluate posibility of automation usage on social networks services.
 
 You can use application on your own risk and responsibility.
 
-##Requirements:
+## Requirements:
     Docker installed;
 
 ##Steps to execute:
@@ -24,6 +24,6 @@ You can use application on your own risk and responsibility.
     'docker-compose down'
    ```
     
-There are a lot of work **TODO**. feel free to contribute if you would like to.
+There are a lot of work **TODO**. feel free to contribute if you would like to :thumbsup:. 
 
 Application workflow is described in short article - [Hey Insta, I'm not a bot!](https://shady333.blogspot.com/2020/01/instagram.html)
