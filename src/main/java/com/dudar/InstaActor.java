@@ -37,6 +37,7 @@ public class InstaActor {
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
     final List<String> defectedTags = new ArrayList<>();
+    private boolean executionError;
     private int totalComments=0;
     private boolean commentsEnabled;
 
@@ -204,8 +205,6 @@ public class InstaActor {
 
     private void interactWithPosts(int maxPostsCount){
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
-        String likesCollectionElementsLocator =
-                "//article//span[attribute::aria-label='Share Post']/../..//span[attribute::aria-label='Like']";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
         sleep(getRandonTimeout());
 
@@ -213,22 +212,17 @@ public class InstaActor {
         mouseMoveToElementAndClick(firstPostToLike);
 
         //TODO detect count of available posts. Should not exceed maxPostsCount
-
         for(int i = 1; i <= maxPostsCount; i++){
             System.out.println(Utilities.getCurrentTimestamp() + i + ". Current page - " + WebDriverRunner.url());
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
-
-            ElementsCollection likesCollection = $$(By.xpath(likesCollectionElementsLocator));
-            if(likesCollection.size() > 0){
+            if(InstaActorElements.getPostLikeButton()!=null){
                 sleep(getRandonTimeout());
-
                 detectPostTypeAndAct();
-
                 if(likePost()){
                     System.out.println("!!!LIKE!!!");
                     if(likesEnabled) {
-                        mouseMoveToElementAndClick(likesCollection.get(0));
-                        if (suspectedActionsDetector(likesCollectionElementsLocator))
+                        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+                        if (suspectedActionsDetector())
                             return;
                     }
                     else{
@@ -236,7 +230,7 @@ public class InstaActor {
                     }
                     if(commentsEnabled && commentPost()) {
                         addCommentToPost();
-                        if (suspectedActionsDetector(likesCollectionElementsLocator))
+                        if (suspectedActionsDetector())
                             return;
                     }
                 }
@@ -247,8 +241,7 @@ public class InstaActor {
         }
     }
 
-    private boolean suspectedActionsDetector(String likesCollectionElementsLocator) {
-        ElementsCollection likesCollection;
+    private boolean suspectedActionsDetector() {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
             warningsCounter++;
@@ -259,7 +252,6 @@ public class InstaActor {
                 completedTags.forEach(System.out::println);
                 System.out.println("Total LIKES - " + getTotalLikes());
                 System.out.println("!!!STOP EXECUTION");
-
                 System.exit(1);
                 return true;
             }
@@ -267,11 +259,10 @@ public class InstaActor {
             System.out.println("Detected suspicious action detected by service");
             buttonReport.get(0).click();
             sleep(getRandonTimeout());
-            likesCollection = $$(By.xpath(likesCollectionElementsLocator));
-            if(likesCollection.size() > 0) {
+            if(InstaActorElements.getPostLikeButton()!=null) {
                 System.out.println("Re Like current post");
                 if(likesEnabled)
-                    mouseMoveToElementAndClick(likesCollection.get(0));
+                    mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
                 sleep(getRandonTimeout());
             }
             System.out.println("Switching to next tag for likes");
@@ -285,19 +276,13 @@ public class InstaActor {
     public void start(){
         while(!likeComplated) {
                 authentificate();
-
                 $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
                 $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
-
                 checkIfPopupShown();
-
                 Collections.shuffle(this.tags);
-
                 int tagsCollectionSize = this.tags.size();
                 AtomicInteger tagCounter = new AtomicInteger(1);
-
                 for(String searchTag : tags){
-
                     if (!completedTags.contains(searchTag)) {
                         completedTags.add(searchTag);
                         System.out.println(Utilities.getCurrentTimestamp() + "Search Tag - " + searchTag);
@@ -307,7 +292,6 @@ public class InstaActor {
                                     interactWithPosts(maxPostsCount);
                                 WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
                                 mouseMoveToElementAndClick(closeButton);
-
                             }
                     }
                 }
