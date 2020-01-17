@@ -9,16 +9,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Utilities {
-
-    private static boolean gridReady(){
-        return gridReady(null);
-    }
 
     private static boolean gridReady(String urlGrid){
         String gridUrl;
@@ -36,13 +34,7 @@ public class Utilities {
             connection.connect();
 
             int code = connection.getResponseCode();
-            if(code == 200){
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return code == 200;
         }
         catch (Exception ex){
             System.out.print(".");
@@ -50,12 +42,8 @@ public class Utilities {
         }
     }
 
-    private static void checkGridStatus() {
-        checkGridStatus(null);
-    }
-
     public static void checkGridStatus(String hubUrl) {
-        long waitGridReadyDuration = TimeUnit.SECONDS.toMillis(30);
+        long waitGridReadyDuration = TimeUnit.SECONDS.toMillis(120);
         long currentTime = System.currentTimeMillis();
         System.out.print("Waiting for Grid to be ready - " + hubUrl);
         while(System.currentTimeMillis() < currentTime + waitGridReadyDuration){
@@ -65,13 +53,12 @@ public class Utilities {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                ;
             }
         }
         System.out.println();
         if(!gridReady(hubUrl)){
-            System.out.println("Selenium Grid is not ready");
-            System.out.println("Terminating execution!!!");
+            System.out.println("\n" + Utilities.getCurrentTimestamp() + "Selenium Grid is not ready");
+            System.out.println(Utilities.getCurrentTimestamp() + "Terminating execution!!!");
             System.exit(0);
         }
     }
@@ -79,19 +66,21 @@ public class Utilities {
     //TODO Combine into one List all values from CSV file, if it has more than 1 row
     public static List<String> getAllTags(String filePath){
         List<List<String>> records = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new FileReader(filePath));) {
-            String[] values = null;
+        try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
+            String[] values;
             while ((values = csvReader.readNext()) != null) {
                 records.add(Arrays.asList(values));
             }
             return records.get(0);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CsvValidationException e) {
+        } catch (IOException | CsvValidationException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getCurrentTimestamp(){
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        Instant instant = timestamp.toInstant();
+        return String.valueOf(instant).concat(" : ");
     }
 }
