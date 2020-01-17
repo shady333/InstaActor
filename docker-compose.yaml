@@ -13,10 +13,9 @@ services:
       - GRID_TIMEOUT=180000
       - JAVA_OPTS=-Xms2g -Xmx6g
     depends_on:
-      - insta-actor-bricks
-      - insta-actor-inline
-      - insta-actor-neverold
-  chrome-1:
+      - insta-actor-user1
+      - insta-actor-user2
+  chrome:
     image: selenium/node-chrome:3.141.59-yttrium
     volumes:
       - /dev/shm:/dev/shm
@@ -25,30 +24,22 @@ services:
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
-      - NODE_MAX_INSTANCES=6
-      - NODE_MAX_SESSION=6
+      - NODE_MAX_INSTANCES=5
+      - NODE_MAX_SESSION=5
 
-  insta-actor-bricks:
-    image: shady333/instaactor:v0.1
+  insta-actor-user1:
+    image: instaactor:v0.1
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
       - JAVA_OPTS=-Xmx4g
     command: >
-      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dexec.args="/usr/src/app/data/bricks_user.properties /usr/src/app/data/bricks_tags.csv"
+      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dexec.args="/usr/src/app/data/user1.properties /usr/src/app/data/tags1.csv"
 
-  insta-actor-inline:
-    image: shady333/instaactor:v0.1
+  insta-actor-user2:
+    image: instaactor:v0.1
     environment:
       - HUB_HOST=selenium-hub
       - HUB_PORT=4444
     command: >
-      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dexec.args="/usr/src/app/data/inline_user.properties /usr/src/app/data/inline_tags.csv"
-
-  insta-actor-neverold:
-    image: shady333/instaactor:v0.1
-    environment:
-      - HUB_HOST=selenium-hub
-      - HUB_PORT=4444
-    command: >
-      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dexec.args="/usr/src/app/data/neverold_user.properties /usr/src/app/data/neverold_tags.csv"
+      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dexec.args="/usr/src/app/data/user2.properties /usr/src/app/data/tags2.csv"

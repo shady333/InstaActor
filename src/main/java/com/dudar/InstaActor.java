@@ -7,7 +7,6 @@ import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.utils.Utilities;
 import com.google.common.base.Strings;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
@@ -25,21 +24,19 @@ public class InstaActor {
 
     private String login;
     private String pass;
-    private boolean debug = false;
     private boolean likesEnabled = false;
     private int totalLiked = 0;
     private final int maxPostsCount = 50;
     private int warningsCounter = 0;
-    private final int minViewDelay = 2000;
-    private final int maxViewDelay = 5000;
-    private final int minVideoDelay = 3000;
-    private final int maxVideoDelay = 10000;
-    private final int likesPercentage = 90;
-    private final int commentsPercentage = 50;
+    private final int minViewDelay = 100;
+    private final int maxViewDelay = 500;
+    private final int minVideoDelay = 100;
+    private final int maxVideoDelay = 500;
+    private final int likesPercentage = 10;
+    private final int commentsPercentage = 10;
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
     final List<String> defectedTags = new ArrayList<>();
-    private boolean executionError;
     private int totalComments=0;
     private boolean commentsEnabled;
 
@@ -61,11 +58,6 @@ public class InstaActor {
 
     public InstaActor loadTags(List<String> tagsToLoad){
         this.tags = tagsToLoad;
-        return this;
-    }
-
-    public InstaActor enableDebug(){
-        this.debug = true;
         return this;
     }
 
@@ -332,35 +324,10 @@ public class InstaActor {
     }
 
     private List<String> comments = new ArrayList<>(Arrays.asList(
-//            "Nice\uD83D\uDE4C",
-//            "Nice \uD83D\uDE4C",
-//            "nice\uD83D\uDE4C",
-//            "nice \uD83D\uDE4C",
-//            "\uD83D\uDC4F\uD83D\uDC4F\uD83D\uDC4F",
-//            "Looks awesome ️\uD83D\uDE4C\uD83D\uDE0E",
-//            "looks awesome️\uD83D\uDE4C\uD83D\uDE0E",
-//            "it's awesome ️\uD83D\uDE4C \uD83D\uDE0E",
-//            "awesome\uD83D\uDE0E",
-//            "awesome \uD83D\uDE0E !!!",
-//            "\uD83D\uDC4D\uD83C\uDFFB\uD83D\uDC4D\uD83C\uDFFB\uD83D\uDC4D\uD83C\uDFFB",
-            "Nice shot!!!",
-            "Nice shot!!",
-            "Nice shot!",
-            "good shot !",
-            "Looks great!",
-            "looks great ! ",
-            "Awesome!!",
-            "AWESOME !!!",
-            "awesome !",
-            " awesome ",
-            "I like it",
-            "I like it!",
-            "like it",
-            "realy like",
-            "get my like",
-            "TREU",
-            "true"
-    ));
+            "Cool post",
+            "Nice shot",
+            "I like it"
+            ));
 
     private String getComment(){
         int maxVal = comments.size();
@@ -375,18 +342,16 @@ public class InstaActor {
                 $(By.cssSelector("article textarea")).val(commentText);
 
                 //TODO add emojji support
-                //Commented part for posting emojji, not working yet
-//                String JS_ADD_TEXT_TO_INPUT = "var elm = arguments[0], txt = arguments[1]; elm.value += txt; elm.dispatchEvent(new Event('change'));";
-//                WebElement textBox = $(By.cssSelector("article textarea"));
-//                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
                 System.out.println("Comment added!!!");
                 totalComments++;
             } catch (Error err) {
                 System.out.println("ERROR on commenting");
+                throw err;
             } catch (Exception ex) {
                 System.out.println("EXCEPTION on commenting");
+                throw ex;
             }
     }
 }

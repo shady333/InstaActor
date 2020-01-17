@@ -77,18 +77,17 @@ public class Runner {
         clearBrowserLocalStorage();
         clearBrowserCookies();
         close();
-        System.out.println("Total likes added = " + actor.getTotalLikes());
-        System.out.println("Total comments added = " + actor.getTotalComments());
-        System.out.println("Defected tags");
-        actor.printDefectedTags();
+        getCurrentStateForCompletedActions(actor);
+
         System.out.println("Shutting down!");
     }
 
     @NotNull
     private static List<String> exceptionClose(List<String> hashTags, InstaActor actor) {
         List<String> currentTags;
-        System.out.println("Completed tags:");
-        actor.getCompletedTags().forEach(System.out::println);
+
+        System.out.println(Utilities.getCurrentTimestamp() + "UNEXPECTED STOP INFO:\n");
+        getCurrentStateForCompletedActions(actor);
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
         try{
             clearBrowserLocalStorage();
@@ -101,6 +100,16 @@ public class Runner {
         }
         sleep(5000);
         return currentTags;
+    }
+
+    private static void getCurrentStateForCompletedActions(InstaActor actor) {
+        System.out.println("Likes added: " + actor.getTotalLikes());
+        System.out.println("Comments added: " + actor.getTotalComments());
+        System.out.println("Completed tags:");
+        actor.getCompletedTags().forEach(System.out::println);
+        System.out.println("Defected tags");
+        actor.printDefectedTags();
+        System.out.println("**********************InstaActor*******************");
     }
 
     private static void initDriver(boolean debug) {

@@ -43,7 +43,7 @@ public class Utilities {
     }
 
     public static void checkGridStatus(String hubUrl) {
-        long waitGridReadyDuration = TimeUnit.SECONDS.toMillis(30);
+        long waitGridReadyDuration = TimeUnit.SECONDS.toMillis(120);
         long currentTime = System.currentTimeMillis();
         System.out.print("Waiting for Grid to be ready - " + hubUrl);
         while(System.currentTimeMillis() < currentTime + waitGridReadyDuration){
@@ -57,8 +57,8 @@ public class Utilities {
         }
         System.out.println();
         if(!gridReady(hubUrl)){
-            System.out.println("Selenium Grid is not ready");
-            System.out.println("Terminating execution!!!");
+            System.out.println("\n" + Utilities.getCurrentTimestamp() + "Selenium Grid is not ready");
+            System.out.println(Utilities.getCurrentTimestamp() + "Terminating execution!!!");
             System.exit(0);
         }
     }
