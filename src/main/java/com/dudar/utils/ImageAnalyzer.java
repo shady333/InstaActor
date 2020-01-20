@@ -17,23 +17,6 @@ public class ImageAnalyzer {
 
     final static Logger logger = Logger.getLogger(ImageAnalyzer.class);
 
-    public static void main (String[] args) throws IOException {
-
-
-        String asd = Utilities.getImaggaApiKey();
-
-        String asd1 = Utilities.getImaggaApiSecret();
-
-        //TODO
-        //Store image from web to local storage
-
-        String localImageFilepath = "tmp/current_post_image.jpg";
-        String resourceId = uploadResource(localImageFilepath);
-        List<String> similarTags = getTagsForImage(resourceId);
-        deleteResource(resourceId);
-
-    }
-
     public static String imageType(String filePath) throws IOException {
         String resourceId = uploadResource(filePath);
         List<String> similarTags = getTagsForImage(resourceId);
@@ -49,9 +32,7 @@ public class ImageAnalyzer {
 
     private static List<String> getTagsForImage(String image_url) throws IOException{
         String basicAuth = getAuthString();
-
         String endpoint_url = "https://api.imagga.com/v2/tags";
-//        String image_url = "https://imagga.com/static/images/tagging/wind-farm-538576_640.jpg";
 
         String url = endpoint_url + "?image_upload_id=" + image_url;
         URL urlObject = new URL(url);
@@ -61,8 +42,8 @@ public class ImageAnalyzer {
 
         int responseCode = connection.getResponseCode();
 
-        System.out.println("\nSending 'GET' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
+//        System.out.println("\nSending 'GET' request to URL : " + url);
+//        System.out.println("Response Code : " + responseCode);
 
         BufferedReader connectionInput = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
@@ -70,13 +51,9 @@ public class ImageAnalyzer {
 
         connectionInput.close();
 
-        System.out.println(jsonResponse);
-
-        //TODO return tags from json
+//        System.out.println(jsonResponse);
 
         JSONObject obj = new JSONObject(jsonResponse);
-
-//        String pageName = obj.getJSONObject("result").getString("pageName");
 
         JSONArray arr = obj.getJSONObject("result").getJSONArray("tags");
         List<String> resultTags =new ArrayList<>();
@@ -90,42 +67,9 @@ public class ImageAnalyzer {
         return resultTags;
     }
 
-    private static List<String> getTagsForWebImage(String image_url) throws IOException{
-        String basicAuth = getAuthString();
-
-        String endpoint_url = "https://api.imagga.com/v2/tags";
-//        String image_url = "https://imagga.com/static/images/tagging/wind-farm-538576_640.jpg";
-
-        String url = endpoint_url + "?image_url=" + image_url;
-        URL urlObject = new URL(url);
-        HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
-
-        connection.setRequestProperty("Authorization", "Basic " + basicAuth);
-
-        int responseCode = connection.getResponseCode();
-
-        System.out.println("\nSending 'GET' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
-
-        BufferedReader connectionInput = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-        String jsonResponse = connectionInput.readLine();
-
-        connectionInput.close();
-
-        System.out.println(jsonResponse);
-
-        //TODO return tags from json
-
-        JSONObject obj = new JSONObject(jsonResponse);
-
-        return null;
-    }
-
     private static String uploadResource(String imageFilepath) throws IOException {
         String basicAuth = getAuthString();
 
-        // Change the file path here
         String filepath = imageFilepath;
         File fileToUpload = new File(filepath);
 
@@ -179,12 +123,11 @@ public class ImageAnalyzer {
         responseStreamReader.close();
 
         String response = stringBuilder.toString();
-        System.out.println(response);
+//        System.out.println(response);
 
         responseStream.close();
         connection.disconnect();
 
-        //TODO parse json and return resource identifier
         JSONObject obj = new JSONObject(response);
         String pageId = obj.getJSONObject("result").getString("upload_id");
         return pageId;
@@ -204,8 +147,8 @@ public class ImageAnalyzer {
 
         int responseCode = connection.getResponseCode();
 
-        System.out.println("\nSending 'DELETE' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
+//        System.out.println("\nSending 'DELETE' request to URL : " + url);
+//        System.out.println("Response Code : " + responseCode);
 
         BufferedReader connectionInput = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
@@ -213,7 +156,7 @@ public class ImageAnalyzer {
 
         connectionInput.close();
 
-        System.out.println(jsonResponse);
+//        System.out.println(jsonResponse);
     }
 
     private static String getAuthString() {
