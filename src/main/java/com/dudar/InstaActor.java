@@ -26,20 +26,73 @@ public class InstaActor {
     private String pass;
     private boolean likesEnabled = false;
     private int totalLiked = 0;
-    private final int maxPostsCount = 50;
+    private int maxPostsCount = 10;
     private int warningsCounter = 0;
-    private final int minViewDelay = 100;
-    private final int maxViewDelay = 500;
-    private final int minVideoDelay = 100;
-    private final int maxVideoDelay = 500;
-    private final int likesPercentage = 10;
-    private final int commentsPercentage = 10;
+    private int minViewDelay = 500;
+    private int maxViewDelay = 1000;
+    private int minVideoDelay = 2000;
+    private int maxVideoDelay = 3000;
+    private int likesPercentage = 50;
+    private int commentsPercentage = 10;
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
     final List<String> defectedTags = new ArrayList<>();
     private boolean executionError;
     private int totalComments=0;
     private boolean commentsEnabled;
+
+    public void viewCurrentParameters(){
+        System.out.println("*****InstaActor Parameters*****");
+        System.out.println("Like enabled - " + likesEnabled);
+        System.out.println("Like percentage - " + likesPercentage);
+        System.out.println("Comment enabled - " + commentsEnabled);
+        System.out.println("Comment percentage - " + commentsPercentage);
+        System.out.println("View parameters: " + minViewDelay + " " + maxViewDelay);
+        System.out.println("Video parameters: " + minVideoDelay + " " + maxVideoDelay);
+        System.out.println("*****InstaActor Parameters*****");
+    }
+
+    public InstaActor setMaxPostsCount(int value){
+        if(value > 0)
+            this.maxPostsCount = value;
+        return this;
+    }
+
+    public InstaActor setMinViewDelay(int value){
+        if(value > 0)
+            this.minViewDelay = value;
+        return this;
+    }
+
+    public InstaActor setMaxViewDelay(int value){
+        if(value > 0)
+            this.maxViewDelay = value;
+        return this;
+    }
+
+    public InstaActor setMinVideoDelay(int value){
+        if(value > 0)
+            this.minVideoDelay = value;
+        return this;
+    }
+
+    public InstaActor setMaxVideoDelay(int value){
+        if(value > 0)
+            this.maxVideoDelay = value;
+        return this;
+    }
+
+    public InstaActor setLikesPercentage(int value){
+        if(value > 0)
+            this.likesPercentage = value;
+        return this;
+    }
+
+    public InstaActor setCommentsPercentage(int value){
+        if(value > 0)
+            this.commentsPercentage = value;
+        return this;
+    }
 
     public InstaActor(){
     }
@@ -228,7 +281,7 @@ public class InstaActor {
                     else{
                         System.out.println("!!!Likes option is disabled");
                     }
-                    if(commentsEnabled && commentPost()) {
+                    if(commentsEnabled) {
                         addCommentToPost();
                         if (suspectedActionsDetector())
                             return;
@@ -307,35 +360,78 @@ public class InstaActor {
         return this.totalComments;
     }
 
-    private List<String> comments = new ArrayList<>(Arrays.asList(
-            "Cool post",
-            "Nice shot",
-            "I like it"
+    private List<String> comment1 = new ArrayList<>(Arrays.asList(
+            "Cool",
+            "Nice",
+            "Good"
+    ));
+
+    private List<String> comment2 = new ArrayList<>(Arrays.asList(
+            " shots",
+            " Shots",
+            " picture",
+            " Picture",
+            " photo",
+            " Photo"
             ));
 
+    private List<String> comment3 = new ArrayList<>(Arrays.asList(
+            ".",
+            "!",
+            "!!!",
+            " !",
+            " !!!",
+            "!!"
+    ));
+
+    private List<String> comments = new ArrayList<>(Arrays.asList(
+            "Awesome!",
+            "AWESOME!!!",
+            "Amazing",
+            "Thumb Up!",
+            "Get my like"
+    ));
+
     private String getComment(){
-        int maxVal = comments.size();
-        int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
-        return comments.get(commentIndex);
+        if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
+            int maxVal = comments.size();
+            int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
+            return comments.get(commentIndex);
+        }
+        else{
+            return
+                    comment1.get(ThreadLocalRandom.current().nextInt(0, comment1.size()))
+                            .concat(
+                                    comment2.get(ThreadLocalRandom.current().nextInt(0, comment2.size()))
+                            ).concat(
+                            comment3.get(ThreadLocalRandom.current().nextInt(0, comment3.size()))
+                    );
+        }
     }
 
     private void addCommentToPost(){
-            try {
+        if(commentPost())
+        {
+        try {
                 String commentText = getComment();
                 System.out.println(commentText);
                 $(By.cssSelector("article textarea")).val(commentText);
 
                 //TODO add emojji support
+                //Commented part for posting emojji, not working yet
+//                String JS_ADD_TEXT_TO_INPUT = "var elm = arguments[0], txt = arguments[1]; elm.value += txt; elm.dispatchEvent(new Event('change'));";
+//                WebElement textBox = $(By.cssSelector("article textarea"));
+//                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
                 System.out.println("Comment added!!!");
                 totalComments++;
             } catch (Error err) {
                 System.out.println("ERROR on commenting");
-                throw err;
-            } catch (Exception ex) {
-                System.out.println("EXCEPTION on commenting");
-                throw ex;
             }
+        }
+        else{
+            System.out.println("!Skip comment!");
+        }
     }
 }
