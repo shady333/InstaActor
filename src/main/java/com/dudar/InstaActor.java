@@ -385,7 +385,8 @@ public class InstaActor {
     ));
 
     private List<String> comments = new ArrayList<>(Arrays.asList(
-            "Awesomw",
+            "Awesome!",
+            "AWESOME!!!",
             "Amazing",
             "Thumb Up!",
             "Get my like"
