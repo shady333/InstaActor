@@ -26,35 +26,35 @@ public class Runner {
     private static Properties prop = new Properties();
 
     public static void main(String[] args){
-
         boolean debug;
         List<String> hashTags;
-
-        //Read configuration file
         String confFilePath = args[0];
-
         try (InputStream input = new FileInputStream(confFilePath)) {
-            // load a properties file
             prop.load(input);
         } catch (IOException ex) {
             System.out.println("!!!ERROR on properties initialization");
             ex.printStackTrace();
             System.exit(1);
         }
-
         debug = Boolean.parseBoolean(prop.getProperty("debug.mode"));
-
-        //read all tags
+        //TODO better way to combine tags
         hashTags = Utilities.getAllTags(args[1]);
         hashTags.forEach(System.out::println);
-
-        System.out.println("Starting");
+        System.out.println("Starting...");
         List<String> currentTags = hashTags;
         InstaActor actor = new InstaActor();
         actor.setLogin(prop.getProperty("acc.user"))
                 .setPassword(prop.getProperty("acc.password"))
                 .enableLikes(prop.getProperty("likes.enabled"))
-                .enableComments(prop.getProperty("comments.enabled"));
+                .enableComments(prop.getProperty("comments.enabled"))
+                .setMaxPostsCount(Integer.valueOf(prop.getProperty("posts.count")))
+                .setMinViewDelay(Integer.valueOf(prop.getProperty("view.min.delay")))
+                .setMaxViewDelay(Integer.valueOf(prop.getProperty("view.max.delay")))
+                .setMinVideoDelay(Integer.valueOf(prop.getProperty("video.min.delay")))
+                .setMaxVideoDelay(Integer.valueOf(prop.getProperty("video.max.delay")))
+                .setLikesPercentage(Integer.valueOf(prop.getProperty("likes.percentage")))
+                .setCommentsPercentage(Integer.valueOf(prop.getProperty("comments.percentage")));
+        actor.viewCurrentParameters();
         while(actor.getCompletedTags().size() != hashTags.size())
         {
             try {
@@ -73,19 +73,16 @@ public class Runner {
                 currentTags = exceptionClose(hashTags, actor);
             }
         }
-
         clearBrowserLocalStorage();
         clearBrowserCookies();
         close();
         getCurrentStateForCompletedActions(actor);
-
         System.out.println("Shutting down!");
     }
 
     @NotNull
     private static List<String> exceptionClose(List<String> hashTags, InstaActor actor) {
         List<String> currentTags;
-
         System.out.println(Utilities.getCurrentTimestamp() + "UNEXPECTED STOP INFO:\n");
         getCurrentStateForCompletedActions(actor);
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
@@ -121,7 +118,6 @@ public class Runner {
                 seleniumHubPort = prop.getProperty("hub.port");
             }
             String gridHubUrl = "http://" + seleniumHub + ":" + seleniumHubPort;
-
             //Check grid status
             Utilities.checkGridStatus(gridHubUrl);
             try {
