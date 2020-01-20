@@ -4,13 +4,21 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
+import com.dudar.utils.ImageAnalyzer;
 import com.dudar.utils.Utilities;
 import com.google.common.base.Strings;
+import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.codeborne.selenide.Selenide.*;
 
 public class InstaActor {
+
+    final static Logger logger = Logger.getLogger(InstaActor.class);
 
     private String login;
     private String pass;
@@ -199,12 +209,28 @@ public class InstaActor {
         }
     }
 
-    private void detectPostTypeAndAct() {
+    private String detectPostTypeAndAct() {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
                 System.out.println("Post type - Image");
-                return;
+
+                try {
+                    String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
+
+                    URL imageURL = new URL(imageUrl);
+                    BufferedImage saveImage = ImageIO.read(imageURL);
+                    String savedImagePath = "tmp/current_post_image.jpg";
+                    ImageIO.write(saveImage, "jpg", new File(savedImagePath));
+
+                    //TODO Image Recognition
+                    return ImageAnalyzer.imageType(savedImagePath);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return "Image";
             }
             else
             {
@@ -213,7 +239,7 @@ public class InstaActor {
                     System.out.println("Navigate to next image > " + i);
                     mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")));
                 }
-                return;
+                return "Gallery";
             }
         }
         imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//video[attribute::type='video/mp4']"));
@@ -225,7 +251,9 @@ public class InstaActor {
             videoButton.click();
             sleep(getVideoRandonTimeout());
             videoButton.click();
+            return "Video";
         }
+        return "UNDEFINED";
     }
 
     private boolean likePost(){
@@ -234,7 +262,6 @@ public class InstaActor {
         boolean result;
         if(ThreadLocalRandom.current().nextInt(min, max) <= likesPercentage) {
             System.out.println(Utilities.getCurrentTimestamp() + "Like it");
-            totalLiked++;
             result = true;
         }
         else {
@@ -250,7 +277,6 @@ public class InstaActor {
         boolean result = false;
         if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
             System.out.println(Utilities.getCurrentTimestamp() + "Add Comment");
-            totalComments++;
             result = true;
         }
         return result;
@@ -270,11 +296,11 @@ public class InstaActor {
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
                 sleep(getRandonTimeout());
-                detectPostTypeAndAct();
+                String postType = detectPostTypeAndAct();
                 if(likePost()){
-                    System.out.println("!!!LIKE!!!");
+
                     if(likesEnabled) {
-                        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+                        addLikeToPost();
                         if (suspectedActionsDetector())
                             return;
                     }
@@ -282,6 +308,7 @@ public class InstaActor {
                         System.out.println("!!!Likes option is disabled");
                     }
                     if(commentsEnabled) {
+                        //TODO Post comment according to image type
                         addCommentToPost();
                         if (suspectedActionsDetector())
                             return;
@@ -292,6 +319,12 @@ public class InstaActor {
             mouseMoveToElementAndClick(nextPostButton);
             sleep(getRandonTimeout());
         }
+    }
+
+    private void addLikeToPost() {
+        System.out.println("!!!LIKE!!!");
+        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+        totalLiked++;
     }
 
     private boolean suspectedActionsDetector() {
@@ -414,7 +447,7 @@ public class InstaActor {
         {
         try {
                 String commentText = getComment();
-                System.out.println(commentText);
+                logger.debug("Trying to add comment: " + commentText);
                 $(By.cssSelector("article textarea")).val(commentText);
 
                 //TODO add emojji support
@@ -424,14 +457,14 @@ public class InstaActor {
 //                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-                System.out.println("Comment added!!!");
+                logger.info("Comment added: " + commentText);
                 totalComments++;
             } catch (Error err) {
-                System.out.println("ERROR on commenting");
+                logger.error("ERROR on commenting" + err.getLocalizedMessage());
             }
         }
         else{
-            System.out.println("!Skip comment!");
+            logger.info("Skip comment");
         }
     }
 }

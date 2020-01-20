@@ -5,6 +5,7 @@ import com.dudar.InstaActor;
 import com.dudar.utils.Utilities;
 import com.google.common.base.Strings;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -21,6 +22,8 @@ import java.util.Properties;
 import static com.codeborne.selenide.Selenide.*;
 
 public class Runner {
+
+    final static Logger logger = Logger.getLogger(Runner.class);
 
     private static RemoteWebDriver driver;
     private static Properties prop = new Properties();

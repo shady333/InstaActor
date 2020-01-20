@@ -2,11 +2,14 @@ package com.dudar;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Selenide.$$;
 
 public class InstaActorElements {
+
+    final static Logger logger = Logger.getLogger(InstaActorElements.class);
 
     public static SelenideElement getPostLikeButton() {
         ElementsCollection collection = $$(By.cssSelector("svg[aria-label=\"Like\"][height=\"24\"]"));
