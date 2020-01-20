@@ -367,8 +367,8 @@ public class InstaActor {
     ));
 
     private List<String> comment2 = new ArrayList<>(Arrays.asList(
-            " shot",
-            " Shot",
+            " shots",
+            " Shots",
             " picture",
             " Picture",
             " photo",
