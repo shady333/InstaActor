@@ -1,6 +1,5 @@
 package com.dudar.utils;
 
-import com.dudar.InstaActor;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -48,7 +47,7 @@ public class ImageAnalyzer {
         for (int i = 0; i < ((arr.length() > 3) ? 3 : arr.length()); i++)
         {
             resultTags.add(arr.getJSONObject(i).getJSONObject("tag").getString("en"));
-            resultTags.add(arr.getJSONObject(i).getString("confidence"));
+            resultTags.add(arr.getJSONObject(i).get("confidence").toString());
         }
 
         return resultTags;
