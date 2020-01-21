@@ -8,8 +8,9 @@ You can use application on your own risk and responsibility.
     Docker installed;
 
 ##Steps to execute:
-1. Modify __*.properties__ file with your user info and enable required actions
+1. Modify __*.properties__ file with your Instagram account info and enable required actions
 2. Modify __*tags.csv__ file with required tags to be used
+4. Modify __access.properties__ file with your credentials at imagoo service
 3. Build an Docker image:
     ```
     'docker image build -t instaactor:v0.1 .'
