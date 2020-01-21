@@ -4,13 +4,21 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
+import com.dudar.utils.ImageAnalyzer;
 import com.dudar.utils.Utilities;
 import com.google.common.base.Strings;
+import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +29,65 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.codeborne.selenide.Selenide.*;
 
 public class InstaActor {
+
+    enum PostType{
+        PHOTO,
+        VIDEO,
+        GALLERY,
+        UNDEFINED
+    }
+
+    private List<String> commentsVideo = new ArrayList<>(Arrays.asList(
+            "Cool Video!",
+            "Cool Video!!!",
+            "Cool video !",
+            "Cool video !!!",
+            "Cool VIDEO!",
+            "Cool VIDEO!!!",
+            "cool video !",
+            "cool video !!!",
+            "Nice Video",
+            "Nice Video !",
+            "Nice Video!!!",
+            "Nice VIDEO !",
+            "NICE VIDEO!",
+            "Good Video!!!",
+            "Good Video"
+    ));
+
+    private List<String> comment1 = new ArrayList<>(Arrays.asList(
+            "Cool",
+            "Nice",
+            "Good"
+    ));
+
+    private List<String> comment2 = new ArrayList<>(Arrays.asList(
+            " shots",
+            " Shots",
+            " picture",
+            " Picture",
+            " photo",
+            " Photo"
+    ));
+
+    private List<String> comment3 = new ArrayList<>(Arrays.asList(
+            ".",
+            "!",
+            "!!!",
+            " !",
+            " !!!",
+            "!!"
+    ));
+
+    private List<String> comments = new ArrayList<>(Arrays.asList(
+            "Awesome!",
+            "AWESOME!!!",
+            "Amazing",
+            "Thumb Up!",
+            "Get my like"
+    ));
+
+    final static Logger logger = Logger.getLogger(InstaActor.class);
 
     private String login;
     private String pass;
@@ -37,19 +104,19 @@ public class InstaActor {
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
     final List<String> defectedTags = new ArrayList<>();
-    private boolean executionError;
     private int totalComments=0;
     private boolean commentsEnabled;
+    private PostType currentPostType = PostType.UNDEFINED;
 
     public void viewCurrentParameters(){
-        System.out.println("*****InstaActor Parameters*****");
-        System.out.println("Like enabled - " + likesEnabled);
-        System.out.println("Like percentage - " + likesPercentage);
-        System.out.println("Comment enabled - " + commentsEnabled);
-        System.out.println("Comment percentage - " + commentsPercentage);
-        System.out.println("View parameters: " + minViewDelay + " " + maxViewDelay);
-        System.out.println("Video parameters: " + minVideoDelay + " " + maxVideoDelay);
-        System.out.println("*****InstaActor Parameters*****");
+        logger.info("*****InstaActor Parameters*****");
+        logger.info("Like enabled - " + likesEnabled);
+        logger.info("Like percentage - " + likesPercentage);
+        logger.info("Comment enabled - " + commentsEnabled);
+        logger.info("Comment percentage - " + commentsPercentage);
+        logger.info("View parameters: " + minViewDelay + " " + maxViewDelay);
+        logger.info("Video parameters: " + minVideoDelay + " " + maxVideoDelay);
+        logger.info("*****InstaActor Parameters*****");
     }
 
     public InstaActor setMaxPostsCount(int value){
@@ -106,7 +173,7 @@ public class InstaActor {
             defectedTags.forEach(System.out::println);
         }
         else{
-            System.out.println(Utilities.getCurrentTimestamp() + "No defected tags");
+            logger.info("No defected tags");
         }
     }
 
@@ -142,7 +209,7 @@ public class InstaActor {
         sleep(3000);
         $(By.name("username")).val(this.login).pressTab();
         $(By.name("password")).val(this.pass).pressEnter();
-
+        sleep(3000);
     }
 
     private void checkIfPopupShown() {
@@ -190,7 +257,6 @@ public class InstaActor {
         System.out.println("Current page Tag - "+tagLocator.getText());
         if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
             return true;
-
         }
         else{
             System.out.println("!!! Can't find  search tag page. Search Tag - "+searchTag);
@@ -204,6 +270,24 @@ public class InstaActor {
         if(imagePost.size()>0){
             if(imagePost.size()==1){
                 System.out.println("Post type - Image");
+
+                try {
+                    String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
+
+                    URL imageURL = new URL(imageUrl);
+                    BufferedImage saveImage = ImageIO.read(imageURL);
+                    String savedImagePath = "tmp/current_post_image.jpg";
+                    ImageIO.write(saveImage, "jpg", new File(savedImagePath));
+
+                    //TODO Image Recognition
+
+                    ImageAnalyzer.imageType(savedImagePath);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                this.currentPostType = PostType.PHOTO;
                 return;
             }
             else
@@ -213,6 +297,7 @@ public class InstaActor {
                     System.out.println("Navigate to next image > " + i);
                     mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")));
                 }
+                this.currentPostType = PostType.GALLERY;
                 return;
             }
         }
@@ -225,7 +310,10 @@ public class InstaActor {
             videoButton.click();
             sleep(getVideoRandonTimeout());
             videoButton.click();
+            this.currentPostType = PostType.VIDEO;
+            return;
         }
+        return;
     }
 
     private boolean likePost(){
@@ -234,7 +322,6 @@ public class InstaActor {
         boolean result;
         if(ThreadLocalRandom.current().nextInt(min, max) <= likesPercentage) {
             System.out.println(Utilities.getCurrentTimestamp() + "Like it");
-            totalLiked++;
             result = true;
         }
         else {
@@ -250,7 +337,6 @@ public class InstaActor {
         boolean result = false;
         if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
             System.out.println(Utilities.getCurrentTimestamp() + "Add Comment");
-            totalComments++;
             result = true;
         }
         return result;
@@ -272,9 +358,9 @@ public class InstaActor {
                 sleep(getRandonTimeout());
                 detectPostTypeAndAct();
                 if(likePost()){
-                    System.out.println("!!!LIKE!!!");
+
                     if(likesEnabled) {
-                        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+                        addLikeToPost();
                         if (suspectedActionsDetector())
                             return;
                     }
@@ -282,6 +368,7 @@ public class InstaActor {
                         System.out.println("!!!Likes option is disabled");
                     }
                     if(commentsEnabled) {
+                        //TODO Post comment according to image type
                         addCommentToPost();
                         if (suspectedActionsDetector())
                             return;
@@ -294,13 +381,19 @@ public class InstaActor {
         }
     }
 
+    private void addLikeToPost() {
+        logger.info("Like post");
+        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+        totalLiked++;
+    }
+
     private boolean suspectedActionsDetector() {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
             warningsCounter++;
             if(warningsCounter>2){
-                System.out.println(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
-                System.out.println("SKIP CURRENT TAG Liking\nBREAK!!!!");
+                logger.warn("!!!WARNING!!!");
+                logger.warn("SKIP CURRENT TAG Liking\nBREAK!!!!");
                 System.out.println("Completed tags:");
                 completedTags.forEach(System.out::println);
                 System.out.println("Total LIKES - " + getTotalLikes());
@@ -308,8 +401,8 @@ public class InstaActor {
                 System.exit(1);
                 return true;
             }
-            System.out.println(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
-            System.out.println("Detected suspicious action detected by service");
+            logger.warn(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
+            logger.warn("Detected suspicious action detected by service");
             buttonReport.get(0).click();
             sleep(getRandonTimeout());
             if(InstaActorElements.getPostLikeButton()!=null) {
@@ -338,12 +431,11 @@ public class InstaActor {
                 for(String searchTag : tags){
                     if (!completedTags.contains(searchTag)) {
                         completedTags.add(searchTag);
-                        System.out.println(Utilities.getCurrentTimestamp() + "Search Tag - " + searchTag);
-                        System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                        logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                         tagCounter.getAndIncrement();
                             if (searchByTag(searchTag)) {
                                     interactWithPosts(maxPostsCount);
-                                WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
+                                WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                                 mouseMoveToElementAndClick(closeButton);
                             }
                     }
@@ -360,37 +452,7 @@ public class InstaActor {
         return this.totalComments;
     }
 
-    private List<String> comment1 = new ArrayList<>(Arrays.asList(
-            "Cool",
-            "Nice",
-            "Good"
-    ));
 
-    private List<String> comment2 = new ArrayList<>(Arrays.asList(
-            " shots",
-            " Shots",
-            " picture",
-            " Picture",
-            " photo",
-            " Photo"
-            ));
-
-    private List<String> comment3 = new ArrayList<>(Arrays.asList(
-            ".",
-            "!",
-            "!!!",
-            " !",
-            " !!!",
-            "!!"
-    ));
-
-    private List<String> comments = new ArrayList<>(Arrays.asList(
-            "Awesome!",
-            "AWESOME!!!",
-            "Amazing",
-            "Thumb Up!",
-            "Get my like"
-    ));
 
     private String getComment(){
         if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
@@ -399,6 +461,11 @@ public class InstaActor {
             return comments.get(commentIndex);
         }
         else{
+            if(this.currentPostType == PostType.VIDEO){
+                logger.info("Return Video comment");
+                return commentsVideo.get(ThreadLocalRandom.current().nextInt(0, commentsVideo.size()));
+            }
+            logger.info("Return Other Content comment");
             return
                     comment1.get(ThreadLocalRandom.current().nextInt(0, comment1.size()))
                             .concat(
@@ -414,7 +481,7 @@ public class InstaActor {
         {
         try {
                 String commentText = getComment();
-                System.out.println(commentText);
+                logger.debug("Trying to add comment: " + commentText);
                 $(By.cssSelector("article textarea")).val(commentText);
 
                 //TODO add emojji support
@@ -424,14 +491,14 @@ public class InstaActor {
 //                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-                System.out.println("Comment added!!!");
+                logger.info("Comment added: " + commentText);
                 totalComments++;
             } catch (Error err) {
-                System.out.println("ERROR on commenting");
+                logger.error("ERROR on commenting" + err.getLocalizedMessage());
             }
         }
         else{
-            System.out.println("!Skip comment!");
+            logger.info("Skip comment");
         }
     }
 }

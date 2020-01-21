@@ -3,10 +3,9 @@ package com.dudar.utils;
 import com.google.common.base.Strings;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
+import org.apache.log4j.Logger;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Timestamp;
@@ -14,9 +13,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class Utilities {
+
+    final static Logger logger = Logger.getLogger(Utilities.class);
+    private static Properties imaggaApiProperties = null;
 
     private static boolean gridReady(String urlGrid){
         String gridUrl;
@@ -82,5 +85,30 @@ public class Utilities {
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
         Instant instant = timestamp.toInstant();
         return String.valueOf(instant).concat(" : ");
+    }
+
+    public static String getImaggaApiKey(){
+        if(imaggaApiProperties == null){
+            initImaggaProperties();
+        }
+        return imaggaApiProperties.getProperty("api.key");
+    }
+
+    public static String getImaggaApiSecret(){
+        if(imaggaApiProperties == null){
+            initImaggaProperties();
+        }
+        return imaggaApiProperties.getProperty("api.secret");
+    }
+
+    private static void initImaggaProperties(){
+        logger.info("Init properties");
+        try (InputStream input = new FileInputStream("src/main/resources/access.properties")){
+            imaggaApiProperties = new Properties();
+            imaggaApiProperties.load(input);
+        }
+        catch (IOException ex){
+            logger.error("Can't create properties", ex);
+        }
     }
 }

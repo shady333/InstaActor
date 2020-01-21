@@ -5,9 +5,12 @@ import com.dudar.InstaActor;
 import com.dudar.utils.Utilities;
 import com.google.common.base.Strings;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.openqa.selenium.UnexpectedAlertBehaviour;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import java.io.FileInputStream;
@@ -21,6 +24,8 @@ import java.util.Properties;
 import static com.codeborne.selenide.Selenide.*;
 
 public class Runner {
+
+    final static Logger logger = Logger.getLogger(Runner.class);
 
     private static RemoteWebDriver driver;
     private static Properties prop = new Properties();
@@ -63,37 +68,37 @@ public class Runner {
                         .loadTags(currentTags)
                         .start();
             }
-            catch (AssertionError ex) {
-                System.out.println(Utilities.getCurrentTimestamp() + "!!!SELENIDE ASSERT ERROR");
-                System.out.println("!!!Error on InstActor: " + ex.getLocalizedMessage());
-                currentTags = exceptionClose(hashTags, actor);
+            catch (AssertionError err) {
+                currentTags = exceptionClose(hashTags, actor, "ASSERT ERRROR\n"+err.getLocalizedMessage());
             }
             catch (Exception ex){
                 System.out.println("!!!OTHER EXCEPTION");
-                currentTags = exceptionClose(hashTags, actor);
+                currentTags = exceptionClose(hashTags, actor, "EXCEPTION\n"+ex.getLocalizedMessage());
             }
         }
         clearBrowserLocalStorage();
         clearBrowserCookies();
-        close();
+        WebDriverRunner.getWebDriver().quit();
         getCurrentStateForCompletedActions(actor);
         System.out.println("Shutting down!");
     }
 
     @NotNull
-    private static List<String> exceptionClose(List<String> hashTags, InstaActor actor) {
+    private static List<String> exceptionClose(List<String> hashTags, InstaActor actor, String issueMessage) {
         List<String> currentTags;
-        System.out.println(Utilities.getCurrentTimestamp() + "UNEXPECTED STOP INFO:\n");
+        logger.error("UNEXPECTED STOP INFO:\n");
+        logger.error(issueMessage);
+
         getCurrentStateForCompletedActions(actor);
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
         try{
             clearBrowserLocalStorage();
             clearBrowserCookies();
-            close();
+            WebDriverRunner.getWebDriver().quit();
         }
         catch (Exception ex){
-            System.out.println("!!!Can't terminate driver");
-            System.out.println(ex.getLocalizedMessage());
+            logger.error("!!!Can't terminate driver");
+            logger.error(ex.getLocalizedMessage());
         }
         sleep(5000);
         return currentTags;
@@ -121,9 +126,11 @@ public class Runner {
             //Check grid status
             Utilities.checkGridStatus(gridHubUrl);
             try {
-                DesiredCapabilities dc = DesiredCapabilities.chrome();
-                dc.setCapability("headless", true);
-                driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), dc);
+                ChromeOptions chromeOptions = new ChromeOptions();
+                chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
+                        UnexpectedAlertBehaviour.IGNORE);
+                chromeOptions.setHeadless(true);
+                driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
                 System.out.println("!!!Can't init DRIVER");
                 System.out.println("Error message: " + e.getLocalizedMessage());
