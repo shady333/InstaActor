@@ -17,7 +17,18 @@ public class InstaActorElements {
             return collection.get(0);
         }
         else {
-            System.out.println("!!! - Can't find LIKE button");
+            logger.info("Like button is not available or already Liked");
+            return null;
+        }
+    }
+
+    public static SelenideElement getPostCloseButton() {
+        ElementsCollection collection = $$(By.cssSelector("//button[contains(text(), 'Close')]"));
+        if(collection.size() > 0) {
+            return collection.get(0);
+        }
+        else {
+            logger.info("Close Post button not available");
             return null;
         }
     }

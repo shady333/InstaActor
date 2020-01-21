@@ -21,37 +21,24 @@ public class ImageAnalyzer {
         String resourceId = uploadResource(filePath);
         List<String> similarTags = getTagsForImage(resourceId);
         deleteResource(resourceId);
-        System.out.println("!!!Image details (first 3 tags): " + similarTags);
+        logger.info("Image details (first 3 tags and confidence): " + similarTags);
         return similarTags.get(0);
     }
 
-    private static String getBasicAuth(){
-        String credentialsToEncode = Utilities.getImaggaApiKey() + ":" + Utilities.getImaggaApiSecret();
-        return Base64.getEncoder().encodeToString(credentialsToEncode.getBytes(StandardCharsets.UTF_8));
-    }
-
     private static List<String> getTagsForImage(String image_url) throws IOException{
-        String basicAuth = getAuthString();
         String endpoint_url = "https://api.imagga.com/v2/tags";
 
         String url = endpoint_url + "?image_upload_id=" + image_url;
         URL urlObject = new URL(url);
         HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
 
-        connection.setRequestProperty("Authorization", "Basic " + basicAuth);
-
-        int responseCode = connection.getResponseCode();
-
-//        System.out.println("\nSending 'GET' request to URL : " + url);
-//        System.out.println("Response Code : " + responseCode);
+        connection.setRequestProperty("Authorization", "Basic " + getAuthString());
 
         BufferedReader connectionInput = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
         String jsonResponse = connectionInput.readLine();
 
         connectionInput.close();
-
-//        System.out.println(jsonResponse);
 
         JSONObject obj = new JSONObject(jsonResponse);
 
@@ -60,16 +47,14 @@ public class ImageAnalyzer {
         //Limit to only top 3 tags for image
         for (int i = 0; i < ((arr.length() > 3) ? 3 : arr.length()); i++)
         {
-            String post_id = arr.getJSONObject(i).getJSONObject("tag").getString("en");
-            resultTags.add(post_id);
+            resultTags.add(arr.getJSONObject(i).getJSONObject("tag").getString("en"));
+            resultTags.add(arr.getJSONObject(i).getString("confidence"));
         }
 
         return resultTags;
     }
 
     private static String uploadResource(String imageFilepath) throws IOException {
-        String basicAuth = getAuthString();
-
         String filepath = imageFilepath;
         File fileToUpload = new File(filepath);
 
@@ -81,7 +66,7 @@ public class ImageAnalyzer {
 
         URL urlObject = new URL("https://api.imagga.com/v2" + endpoint);
         HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
-        connection.setRequestProperty("Authorization", "Basic " + basicAuth);
+        connection.setRequestProperty("Authorization", "Basic " + getAuthString());
         connection.setUseCaches(false);
         connection.setDoOutput(true);
 
@@ -96,7 +81,6 @@ public class ImageAnalyzer {
         request.writeBytes(twoHyphens + boundary + crlf);
         request.writeBytes("Content-Disposition: form-data; name=\"image\";filename=\"" + fileToUpload.getName() + "\"" + crlf);
         request.writeBytes(crlf);
-
 
         InputStream inputStream = new FileInputStream(fileToUpload);
         int bytesRead;
@@ -123,7 +107,6 @@ public class ImageAnalyzer {
         responseStreamReader.close();
 
         String response = stringBuilder.toString();
-//        System.out.println(response);
 
         responseStream.close();
         connection.disconnect();
@@ -134,33 +117,22 @@ public class ImageAnalyzer {
     }
 
     private static void deleteResource(String resourceId) throws IOException {
-        String basicAuth = getAuthString();
-
         String upload_id = resourceId;
         String url = "https://api.imagga.com/v2/uploads/" + upload_id;
 
         URL urlObject = new URL(url);
         HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
 
-        connection.setRequestProperty("Authorization", "Basic " + basicAuth);
+        connection.setRequestProperty("Authorization", "Basic " + getAuthString());
         connection.setRequestMethod("DELETE");
-
-        int responseCode = connection.getResponseCode();
-
-//        System.out.println("\nSending 'DELETE' request to URL : " + url);
-//        System.out.println("Response Code : " + responseCode);
 
         BufferedReader connectionInput = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-        String jsonResponse = connectionInput.readLine();
-
         connectionInput.close();
-
-//        System.out.println(jsonResponse);
     }
 
     private static String getAuthString() {
-        String credentialsToEncode = "acc_6c26e59ce122b7f" + ":" + "5718ebc64fc59ce90adcfa0c61016e3c";
+        String credentialsToEncode = Utilities.getImaggaApiKey() + ":" + Utilities.getImaggaApiSecret();
         return Base64.getEncoder().encodeToString(credentialsToEncode.getBytes(StandardCharsets.UTF_8));
     }
 

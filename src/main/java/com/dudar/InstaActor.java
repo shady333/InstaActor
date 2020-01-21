@@ -47,7 +47,8 @@ public class InstaActor {
     List<String> tags = new ArrayList<>();
     final List<String> completedTags = new ArrayList<>();
     final List<String> defectedTags = new ArrayList<>();
-    private boolean executionError;
+    private boolean executionError = false;
+    private int executionErrorCounter = 0;
     private int totalComments=0;
     private boolean commentsEnabled;
 
@@ -152,7 +153,7 @@ public class InstaActor {
         sleep(3000);
         $(By.name("username")).val(this.login).pressTab();
         $(By.name("password")).val(this.pass).pressEnter();
-
+        sleep(3000);
     }
 
     private void checkIfPopupShown() {
@@ -200,7 +201,6 @@ public class InstaActor {
         System.out.println("Current page Tag - "+tagLocator.getText());
         if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
             return true;
-
         }
         else{
             System.out.println("!!! Can't find  search tag page. Search Tag - "+searchTag);
@@ -371,12 +371,11 @@ public class InstaActor {
                 for(String searchTag : tags){
                     if (!completedTags.contains(searchTag)) {
                         completedTags.add(searchTag);
-                        System.out.println(Utilities.getCurrentTimestamp() + "Search Tag - " + searchTag);
-                        System.out.println("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                        logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                         tagCounter.getAndIncrement();
                             if (searchByTag(searchTag)) {
                                     interactWithPosts(maxPostsCount);
-                                WebElement closeButton = $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible);
+                                WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                                 mouseMoveToElementAndClick(closeButton);
                             }
                     }

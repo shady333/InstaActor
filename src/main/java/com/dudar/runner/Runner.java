@@ -78,7 +78,8 @@ public class Runner {
         }
         clearBrowserLocalStorage();
         clearBrowserCookies();
-        close();
+        WebDriverRunner.getWebDriver().quit();
+//        close();
         getCurrentStateForCompletedActions(actor);
         System.out.println("Shutting down!");
     }
@@ -86,19 +87,20 @@ public class Runner {
     @NotNull
     private static List<String> exceptionClose(List<String> hashTags, InstaActor actor) {
         List<String> currentTags;
-        System.out.println(Utilities.getCurrentTimestamp() + "UNEXPECTED STOP INFO:\n");
+        logger.error("UNEXPECTED STOP INFO:\n");
         getCurrentStateForCompletedActions(actor);
         currentTags = (List<String>) CollectionUtils.disjunction(hashTags, actor.getCompletedTags());
         try{
             clearBrowserLocalStorage();
             clearBrowserCookies();
-            close();
+            WebDriverRunner.getWebDriver().quit();
+//            close();
         }
         catch (Exception ex){
-            System.out.println("!!!Can't terminate driver");
-            System.out.println(ex.getLocalizedMessage());
+            logger.error("!!!Can't terminate driver");
+            logger.error(ex.getLocalizedMessage());
         }
-        sleep(5000);
+//        sleep(5000);
         return currentTags;
     }
 
