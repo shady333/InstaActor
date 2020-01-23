@@ -17,7 +17,7 @@ public class InstaActorElements {
             return collection.get(0);
         }
         else {
-            logger.info("Like button is not available or already Liked");
+            logger.debug("Like button is not available or already Liked");
             return null;
         }
     }
@@ -28,7 +28,7 @@ public class InstaActorElements {
             return collection.get(0);
         }
         else {
-            logger.info("Close Post button not available");
+            logger.debug("Close Post button not available");
             return null;
         }
     }

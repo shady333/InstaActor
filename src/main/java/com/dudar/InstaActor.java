@@ -30,6 +30,11 @@ import static com.codeborne.selenide.Selenide.*;
 
 public class InstaActor {
 
+    private boolean currentPostLikeAdded;
+    private boolean currentAlreadyLike;
+    private String addedComment = "";
+    private String currentStatus = "";
+
     enum PostType{
         PHOTO,
         VIDEO,
@@ -107,6 +112,23 @@ public class InstaActor {
     private int totalComments=0;
     private boolean commentsEnabled;
     private PostType currentPostType = PostType.UNDEFINED;
+
+    private String currentTag;
+
+    public String getCurrentTag() {
+        return currentTag;
+    }
+
+    public String getCurrentPostUrl() {
+        return currentPostUrl;
+    }
+
+    public int getCurrentPosition() {
+        return currentPosition;
+    }
+
+    private String currentPostUrl;
+    private int currentPosition;
 
     public void viewCurrentParameters(){
         logger.info("*****InstaActor Parameters*****");
@@ -256,6 +278,7 @@ public class InstaActor {
         sleep(5000);
         System.out.println("Current page Tag - "+tagLocator.getText());
         if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
+            this.currentTag = searchTag;
             return true;
         }
         else{
@@ -321,11 +344,9 @@ public class InstaActor {
         int max = 100;
         boolean result;
         if(ThreadLocalRandom.current().nextInt(min, max) <= likesPercentage) {
-            System.out.println(Utilities.getCurrentTimestamp() + "Like it");
             result = true;
         }
         else {
-            System.out.println(Utilities.getCurrentTimestamp() + "Skip post. Do not like it.");
             result = false;
         }
         return result;
@@ -352,7 +373,7 @@ public class InstaActor {
 
         //TODO detect count of available posts. Should not exceed maxPostsCount
         for(int i = 1; i <= maxPostsCount; i++){
-            System.out.println(Utilities.getCurrentTimestamp() + i + ". Current page - " + WebDriverRunner.url());
+            currentPostUrl = WebDriverRunner.url();
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
                 sleep(getRandonTimeout());
@@ -365,7 +386,7 @@ public class InstaActor {
                             return;
                     }
                     else{
-                        System.out.println("!!!Likes option is disabled");
+                        logger.info("!!!Likes option is disabled");
                     }
                     if(commentsEnabled) {
                         //TODO Post comment according to image type
@@ -375,15 +396,38 @@ public class InstaActor {
                     }
                 }
             }
+            currentStatus += "\n/***************InstaActor POST INFO*****************/\n";
+            currentStatus += "|\n";
+            currentStatus += "|   Number is " + i + " from " + maxPostsCount + ".\n";
+            currentStatus += "|   Url: " + this.currentPostUrl + ".\n";
+            currentStatus += "|   Type: " + this.currentPostType.toString() + ".\n";
+            currentStatus += "|   Like: " + this.currentPostLikeAdded + ".\n";
+            if(!Strings.isNullOrEmpty(this.addedComment)){
+                currentStatus += "|   Added comment: " + this.addedComment + ".";
+            }
+            currentStatus += "|\n";
+
+            logger.info("Current post info:\n" + currentStatus);
+
+            resetCurrentPostStatus();
+
             WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
             mouseMoveToElementAndClick(nextPostButton);
             sleep(getRandonTimeout());
         }
     }
 
+    private void resetCurrentPostStatus() {
+        this.currentPostLikeAdded = false;
+        this.addedComment = "";
+        this.currentPostType = PostType.UNDEFINED;
+        this.currentStatus = "";
+    }
+
     private void addLikeToPost() {
         logger.info("Like post");
         mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+        this.currentPostLikeAdded = true;
         totalLiked++;
     }
 
@@ -399,9 +443,10 @@ public class InstaActor {
                 System.out.println("Total LIKES - " + getTotalLikes());
                 System.out.println("!!!STOP EXECUTION");
                 System.exit(1);
+                resetCurrentPostStatus();
                 return true;
             }
-            logger.warn(Utilities.getCurrentTimestamp() + "!!!WARNING!!!");
+            logger.warn("!!!WARNING!!!");
             logger.warn("Detected suspicious action detected by service");
             buttonReport.get(0).click();
             sleep(getRandonTimeout());
@@ -412,6 +457,7 @@ public class InstaActor {
                 sleep(getRandonTimeout());
             }
             System.out.println("Switching to next tag for likes");
+            resetCurrentPostStatus();
             return true;
         }
         return false;
@@ -493,6 +539,7 @@ public class InstaActor {
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
                 logger.info("Comment added: " + commentText);
                 totalComments++;
+                addedComment = commentText;
             } catch (Error err) {
                 logger.error("ERROR on commenting" + err.getLocalizedMessage());
             }
