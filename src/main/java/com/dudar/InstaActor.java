@@ -6,6 +6,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.utils.ImageAnalyzer;
 import com.dudar.utils.Utilities;
+import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
@@ -14,6 +15,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
 import javax.imageio.ImageIO;
+import javax.mail.MessagingException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -292,8 +294,6 @@ public class InstaActor {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
-                System.out.println("Post type - Image");
-
                 try {
                     String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
 
@@ -315,7 +315,6 @@ public class InstaActor {
             }
             else
             {
-                System.out.println("Post type - Gallery");
                 for(int i =1; i < imagePost.size(); i++){
                     System.out.println("Navigate to next image > " + i);
                     mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")));
@@ -327,7 +326,6 @@ public class InstaActor {
         imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//video[attribute::type='video/mp4']"));
         if(imagePost.size() > 0)
         {
-            System.out.println("Post type - Video");
             WebElement videoButton = $(By.xpath(
                     "//div[attribute::role='dialog']//article//video[attribute::type='video/mp4']/../../../../..")).shouldBe(Condition.enabled);
             videoButton.click();
@@ -443,6 +441,13 @@ public class InstaActor {
                 completedTags.forEach(System.out::println);
                 System.out.println("Total LIKES - " + getTotalLikes());
                 System.out.println("!!!STOP EXECUTION");
+                try {
+                    EmailService.generateAndSendEmail("Unexpected service Stop Action!!! for:</br>"
+                    +"<b>Tag name:</b> " + currentTag + "</br>"
+                    +"<b>Post Url:</b> " + currentPostUrl + "</br>");
+                } catch (MessagingException e) {
+                    logger.debug(e.getLocalizedMessage());
+                }
                 System.exit(1);
                 resetCurrentPostStatus();
                 return true;

@@ -125,24 +125,34 @@ public class Utilities {
     }
 
     public static String getEmailTo(){
-        if(imaggaApiProperties == null){
-            initImaggaProperties();
-        }
-        return imaggaApiProperties.getProperty("to.email");
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("to.email");
     }
 
     public static String getEmailFrom(){
-        if(imaggaApiProperties == null){
-            initImaggaProperties();
-        }
-        return imaggaApiProperties.getProperty("from.email");
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("from.email");
     }
 
     public static String getEmailSubject(){
-        if(imaggaApiProperties == null){
-            initImaggaProperties();
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("subject.email");
+    }
+
+    public static String getEmailUserName(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("username.email");
+    }
+
+    public static String getEmailUserPassword(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("password.email");
+    }
+
+    private static void getEmailPropertiesInstance() {
+        if (emailProperties == null) {
+            initEmailProperties();
         }
-        return imaggaApiProperties.getProperty("subject.email");
     }
 
 }

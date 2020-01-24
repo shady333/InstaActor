@@ -3,6 +3,7 @@ package com.dudar.runner;
 import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.InstaActor;
 import com.dudar.utils.Utilities;
+import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
@@ -13,6 +14,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import javax.mail.MessagingException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +82,12 @@ public class Runner {
         clearBrowserCookies();
         WebDriverRunner.getWebDriver().quit();
         getCurrentStateForCompletedActions(actor);
+        try {
+            EmailService.generateAndSendEmail("Work Completed</br> + Likes added: " + actor.getTotalLikes() + "</br>");
+        }
+        catch (MessagingException e) {
+            logger.debug(e.getLocalizedMessage());
+        }
         System.out.println("Shutting down!");
     }
 
