@@ -398,6 +398,7 @@ public class InstaActor {
             }
             currentStatus += "\n/***************InstaActor POST INFO*****************/\n";
             currentStatus += "|\n";
+            currentStatus += "|   Tag: " + this.currentTag + ".\n";
             currentStatus += "|   Number is " + i + " from " + maxPostsCount + ".\n";
             currentStatus += "|   Url: " + this.currentPostUrl + ".\n";
             currentStatus += "|   Type: " + this.currentPostType.toString() + ".\n";
