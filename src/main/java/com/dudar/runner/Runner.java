@@ -62,6 +62,12 @@ public class Runner {
                 .setLikesPercentage(Integer.valueOf(prop.getProperty("likes.percentage")))
                 .setCommentsPercentage(Integer.valueOf(prop.getProperty("comments.percentage")));
         actor.viewCurrentParameters();
+        try {
+            EmailService.generateAndSendEmail("Work Started</br>");
+        }
+        catch (MessagingException e) {
+            logger.debug(e.getLocalizedMessage());
+        }
         while(actor.getCompletedTags().size() != hashTags.size())
         {
             try {

@@ -149,6 +149,11 @@ public class Utilities {
         return emailProperties.getProperty("password.email");
     }
 
+    public static String getActionsUserEmail(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("actions.email");
+    }
+
     private static void getEmailPropertiesInstance() {
         if (emailProperties == null) {
             initEmailProperties();
