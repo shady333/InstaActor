@@ -1,43 +1,46 @@
 package com.dudar.runner;
 
-import com.dudar.InstaActor;
+import com.dudar.ActorsManager;
 import com.dudar.InstaActor2;
 import com.dudar.utils.Utilities;
+import com.dudar.utils.services.ActorActions;
 import com.dudar.utils.services.EmailService;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Runner2 {
 
     public static void main(String[] args) throws InterruptedException, IOException, MessagingException {
 
-        Map<String, InstaActor2> actors = new HashMap<>();
-        String mainActorName = "InstaActor";
-        actors.put(mainActorName, new InstaActor2(mainActorName));
+//        Map<String, InstaActor2> actors = new HashMap<>();
+//        String mainActorName = "InstaActor";
+//        actors.put(mainActorName, new InstaActor2(mainActorName));
+//
+//        actors.get(mainActorName).start();
+//
+        ActorsManager actors = ActorsManager.getInstance();
 
-        actors.get(mainActorName).start();
+        Date lastActionDate = new Date();
+
+        AbstractMap.SimpleEntry<String, ActorActions> currentAction;
 
         while(true)
         {
-            if(actors.get(mainActorName).isCompleted())
-                break;
+            currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
 
-            if(statusRequestedEmailService(actors.get(mainActorName)))
-            {
-                actors.get(mainActorName).sendStatusViaEmail();
+            if(!(currentAction.getValue() != ActorActions.UNDEFINED)
+                    & !StringUtils.isEmpty(currentAction.getKey())){
+
+                //DO SOME STUFF
+
             }
 
-            if(shouldStopEmailService(actors.get(mainActorName))) {
-                actors.get(mainActorName).stopExecution();
-                break;
-            }
-
-
+            lastActionDate = new Date();
             TimeUnit.SECONDS.sleep(20);
         }
 

@@ -8,6 +8,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.search.FlagTerm;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Properties;
 
@@ -57,6 +58,7 @@ public class EmailService {
 
     }
 
+    @Deprecated
     public static boolean isStatusRequestMessage(String sender, String serviceName, Date date) throws MessagingException{
 //create properties field
         Properties properties = new Properties();
@@ -100,6 +102,74 @@ public class EmailService {
         return false;
     }
 
+    /***
+     * Expected email message subject in format: "ACTION_START ACTOR_MYACTOR any other characters"
+     * @param sender
+     * @param date
+     * @return
+     * @throws MessagingException
+     */
+    public static AbstractMap.SimpleEntry<String, ActorActions> getActionFromEmail(String sender, Date date) throws MessagingException {
+        //create properties field
+        Properties properties = new Properties();
+
+        ActorActions resultAction = ActorActions.UNDEFINED;
+        String resultActorName = "";
+
+        properties.put("mail.pop3.host", "pop.gmail.com");
+        properties.put("mail.pop3.port", "995");
+        properties.put("mail.pop3.starttls.enable", "true");
+        properties.put("mail.store.protocol", "imaps");
+
+        Session emailSession = Session.getDefaultInstance(properties);
+
+
+        //create the POP3 store object and connect with the pop server
+        Store store = emailSession.getStore("imaps");
+
+        store.connect("pop.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
+
+        //create the folder object and open it
+        Folder emailFolder = store.getFolder("INBOX");
+        emailFolder.open(Folder.READ_ONLY);
+
+        // retrieve the messages from the folder in an array and print it
+        Message[] messages = emailFolder.search(new FlagTerm(new Flags(
+                Flags.Flag.SEEN), false));
+        logger.info("messages.length---" + messages.length);
+
+        for (int i = 0, n = messages.length; i < n; i++) {
+            Message message = messages[i];
+
+            if(message.getSentDate().after(date)){
+                String subject = message.getSubject();
+                if(subject.contains("ACTION_") & subject.contains("ACTOR_") & message.getFrom()[0].toString().contains(sender)){
+
+                    String actionName = subject.split(" ")[0].split("_")[1];
+                    resultActorName = subject.split(" ")[1].split("_")[1];
+
+                    if(actionName.equals("START")){
+                        resultAction = ActorActions.START;
+                    }
+                    else if(actionName.equals("STOP")){
+                        resultAction = ActorActions.STOP;
+                    }
+                    else if(actionName.equals("STATUS")){
+                        resultAction = ActorActions.STATUS;
+                    }
+
+                }
+            }
+        }
+
+        //close the store and folder objects
+        emailFolder.close(false);
+        store.close();
+
+        return new AbstractMap.SimpleEntry<>(resultActorName, resultAction);
+    }
+
+    @Deprecated
     public static boolean isStopMessage(String sender, String serviceName, Date date) throws MessagingException {
         //create properties field
         Properties properties = new Properties();
