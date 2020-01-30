@@ -1,6 +1,5 @@
 package com.dudar;
 
-import com.dudar.runner.Runner2;
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.ActorActions;
 import org.apache.log4j.Logger;
@@ -91,4 +90,11 @@ public class ActorsManager {
         }
     }
 
+    public String getAllStatus() {
+        String services = "";
+        for(String name : actorsMap.keySet()){
+            services += "* " + name + " is active - " + actorsMap.get(name).isAlive() + "<br/>";
+        }
+        return services;
+    }
 }

@@ -181,7 +181,13 @@ public class InstaActor2 implements Runnable, Actor {
     private static void initDriver(boolean debug) {
         if(!debug) {
 
-            String gridHubUrl = "http://localhost:4444";
+            String seleniumHub = System.getenv("HUB_HOST");
+            String seleniumHubPort = System.getenv("HUB_PORT");
+            if(Strings.isNullOrEmpty(seleniumHub) || Strings.isNullOrEmpty(seleniumHubPort)){
+                seleniumHub = "localhost";
+                seleniumHubPort = "4444";
+            }
+            String gridHubUrl = "http://" + seleniumHub + ":" + seleniumHubPort;
             //Check grid status
             Utilities.checkGridStatus(gridHubUrl);
             try {
@@ -474,7 +480,7 @@ public class InstaActor2 implements Runnable, Actor {
                     }
                 }
             }
-            currentStatus += "\n/***************InstaActor POST INFO*****************/\n";
+            currentStatus += "\n/***************InstaActor " + name + " POST INFO*****************/\n";
             currentStatus += "|\n";
             currentStatus += "|   Tag: " + currentTag + ".\n";
             currentStatus += "|   Number is " + i + " from " + maxPostsCount + ".\n";
@@ -512,7 +518,6 @@ public class InstaActor2 implements Runnable, Actor {
 
     @Override
     public void run() {
-
         try {
             EmailService.generateAndSendEmail(viewCurrentParameters().replaceAll("\n", "<br/>"));
         } catch (MessagingException e) {
@@ -520,59 +525,56 @@ public class InstaActor2 implements Runnable, Actor {
             logger.error(e.getMessage());
         }
 
-        try{
-            isStopped = false;
-            int tickersCount = 0;
+        while(!isCompleted) {
+            try {
+                isStopped = false;
 
-            while(!isStopped && !isCompleted)
-            {
-                if(isStopped){
-                    logger.info(name + " Stop received");
-                    isStopped = false;
-                    break;
-                }
+                while (!isStopped && !isCompleted) {
+                    if (isStopped) {
+                        logger.info(name + " Stop received");
+                        isStopped = false;
+                        break;
+                    }
 
-                initDriver(debugMode);
+                    initDriver(debugMode);
 //                initDriver(true);
-                authentificate();
-                checkIfPopupShown();
-                Collections.shuffle(allTags);
-                int tagsCollectionSize = allTags.size();
-                AtomicInteger tagCounter = new AtomicInteger(1);
-                for(String searchTag : allTags){
-                    if (!completedTags.contains(searchTag)) {
-                        completedTags.add(searchTag);
-                        logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
-                        tagCounter.getAndIncrement();
-                        if (searchByTag(searchTag)) {
-                            interactWithPosts(maxPostsCount);
-                            WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
-                            mouseMoveToElementAndClick(closeButton);
+                    authentificate();
+                    checkIfPopupShown();
+                    Collections.shuffle(allTags);
+                    int tagsCollectionSize = allTags.size();
+                    AtomicInteger tagCounter = new AtomicInteger(1);
+                    for (String searchTag : allTags) {
+                        if (!completedTags.contains(searchTag)) {
+                            completedTags.add(searchTag);
+                            logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                            tagCounter.getAndIncrement();
+                            if (searchByTag(searchTag)) {
+                                interactWithPosts(maxPostsCount);
+                                WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+                                mouseMoveToElementAndClick(closeButton);
+                            }
                         }
                     }
+                    isCompleted = true;
+
+                    //            workMethod();
+
+                    //            logger.info("Ticker - " + tickersCount);
+                    //            tickersCount++;
+                    //            if(tickersCount > 1000){
+                    //                isCompleted = true;
+                    //            }
                 }
-                isCompleted = true;
-
-    //            workMethod();
-
-    //            logger.info("Ticker - " + tickersCount);
-    //            tickersCount++;
-    //            if(tickersCount > 1000){
-    //                isCompleted = true;
-    //            }
+                logger.info(name + " Execution stopped");
+                isStopped = true;
+                EmailService.generateAndSendEmail("Execution stopped");
+            } catch (MessagingException ex) {
+                logger.error(ex.getMessage());
+            } catch (Exception ex) {
+                logger.error(ex.getMessage());
+            } finally {
+                clearSession();
             }
-            logger.info(name + " Execution stopped");
-            isStopped = true;
-            EmailService.generateAndSendEmail("Execution stopped");
-        }
-        catch (MessagingException ex){
-            logger.error(ex.getMessage());
-        }
-        catch (Exception ex){
-            logger.error(ex.getMessage());
-        }
-        finally {
-            clearSession();
         }
     }
 
@@ -632,6 +634,7 @@ public class InstaActor2 implements Runnable, Actor {
         String status = "<h1>InstaActor STATUS</h1>"
                 +"<p>Sevice name: " + name
                 +"<p>Sevice is running: " + isAlive()
+                +"<p>Completed Tags: " + completedTags.size()
                 +"<p>Tag: " + currentTag + " from " + allTags.size()
 //                +"Current post number " + i + " from " + maxPostsCount + ".\n";
                 + "<p>Url: " + currentPostUrl
