@@ -4,5 +4,6 @@ public enum ActorActions {
     START,
     STOP,
     STATUS,
+    ABORT,
     UNDEFINED
 }

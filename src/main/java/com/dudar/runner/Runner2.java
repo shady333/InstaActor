@@ -6,6 +6,7 @@ import com.dudar.utils.Utilities;
 import com.dudar.utils.services.ActorActions;
 import com.dudar.utils.services.EmailService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
@@ -15,7 +16,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Runner2 {
 
-    public static void main(String[] args) throws InterruptedException, IOException, MessagingException {
+    final static Logger logger = Logger.getLogger(Runner2.class);
+
+    public static void main(String[] args) throws InterruptedException, MessagingException {
 
 //        Map<String, InstaActor2> actors = new HashMap<>();
 //        String mainActorName = "InstaActor";
@@ -23,25 +26,40 @@ public class Runner2 {
 //
 //        actors.get(mainActorName).start();
 //
-        ActorsManager actors = ActorsManager.getInstance();
+        logger.info("Starting...");
+
+//        ActorsManager actors = ActorsManager.getInstance();
 
         Date lastActionDate = new Date();
 
         AbstractMap.SimpleEntry<String, ActorActions> currentAction;
 
+        EmailService.generateAndSendEmail("TEST");
+
         while(true)
         {
+//            currentAction = new AbstractMap.SimpleEntry<>("inline", ActorActions.START);
             currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
 
-            if(!(currentAction.getValue() != ActorActions.UNDEFINED)
+            if(currentAction.getValue() == ActorActions.ABORT){
+                EmailService.generateAndSendEmail("<h1>!!!STOP FOR EXECUTION!!!");
+                logger.info("END");
+                System.exit(0);
+            }
+
+            if((currentAction.getValue() != ActorActions.UNDEFINED)
                     & !StringUtils.isEmpty(currentAction.getKey())){
 
                 //DO SOME STUFF
+                logger.info(currentAction.getKey() + " --- " + currentAction.getValue());
 
+                ActorsManager.getInstance().proceedAction(currentAction);
+
+                lastActionDate = new Date();
             }
 
-            lastActionDate = new Date();
-            TimeUnit.SECONDS.sleep(20);
+            //
+            TimeUnit.SECONDS.sleep(60);
         }
 
     }

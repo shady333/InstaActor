@@ -116,55 +116,62 @@ public class EmailService {
         ActorActions resultAction = ActorActions.UNDEFINED;
         String resultActorName = "";
 
-        properties.put("mail.pop3.host", "pop.gmail.com");
-        properties.put("mail.pop3.port", "995");
-        properties.put("mail.pop3.starttls.enable", "true");
-        properties.put("mail.store.protocol", "imaps");
+        try {
 
-        Session emailSession = Session.getDefaultInstance(properties);
+            properties.put("mail.pop3.host", "pop.gmail.com");
+            properties.put("mail.pop3.port", "995");
+            properties.put("mail.pop3.starttls.enable", "true");
+            properties.put("mail.store.protocol", "imaps");
+
+            Session emailSession = Session.getDefaultInstance(properties);
 
 
-        //create the POP3 store object and connect with the pop server
-        Store store = emailSession.getStore("imaps");
+            //create the POP3 store object and connect with the pop server
+            Store store = emailSession.getStore("imaps");
 
-        store.connect("pop.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
+            store.connect("pop.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
 
-        //create the folder object and open it
-        Folder emailFolder = store.getFolder("INBOX");
-        emailFolder.open(Folder.READ_ONLY);
+            //create the folder object and open it
+            Folder emailFolder = store.getFolder("INBOX");
+            emailFolder.open(Folder.READ_ONLY);
 
-        // retrieve the messages from the folder in an array and print it
-        Message[] messages = emailFolder.search(new FlagTerm(new Flags(
-                Flags.Flag.SEEN), false));
-        logger.info("messages.length---" + messages.length);
+            // retrieve the messages from the folder in an array and print it
+            Message[] messages = emailFolder.search(new FlagTerm(new Flags(
+                    Flags.Flag.SEEN), false));
+            logger.info("messages.length---" + messages.length);
 
-        for (int i = 0, n = messages.length; i < n; i++) {
-            Message message = messages[i];
+            for (int i = 0, n = messages.length; i < n; i++) {
+                Message message = messages[i];
 
-            if(message.getSentDate().after(date)){
-                String subject = message.getSubject();
-                if(subject.contains("ACTION_") & subject.contains("ACTOR_") & message.getFrom()[0].toString().contains(sender)){
+                if (message.getSentDate().after(date)) {
+                    String subject = message.getSubject();
+                    if (subject.contains("ACTION_") & subject.contains("ACTOR_") & message.getFrom()[0].toString().contains(sender)) {
 
-                    String actionName = subject.split(" ")[0].split("_")[1];
-                    resultActorName = subject.split(" ")[1].split("_")[1];
+                        String actionName = subject.split(" ")[0].split("_")[1];
+                        resultActorName = subject.split(" ")[1].split("_")[1];
 
-                    if(actionName.equals("START")){
-                        resultAction = ActorActions.START;
+                        if (actionName.equals("START")) {
+                            resultAction = ActorActions.START;
+                        } else if (actionName.equals("STOP")) {
+                            resultAction = ActorActions.STOP;
+                        } else if (actionName.equals("STATUS")) {
+                            resultAction = ActorActions.STATUS;
+                        } else if (actionName.equals("ABORT")) {
+                            resultAction = ActorActions.ABORT;
+                        }
+
                     }
-                    else if(actionName.equals("STOP")){
-                        resultAction = ActorActions.STOP;
-                    }
-                    else if(actionName.equals("STATUS")){
-                        resultAction = ActorActions.STATUS;
-                    }
-
                 }
             }
-        }
 
-        //close the store and folder objects
-        emailFolder.close(false);
-        store.close();
+            //close the store and folder objects
+            emailFolder.close(false);
+            store.close();
+
+        }
+        catch (Exception ex){
+            logger.error(ex.getMessage());
+        }
 
         return new AbstractMap.SimpleEntry<>(resultActorName, resultAction);
     }
@@ -221,6 +228,10 @@ public class EmailService {
         mailServerProperties.put("mail.smtp.port", "587");
         mailServerProperties.put("mail.smtp.auth", "true");
         mailServerProperties.put("mail.smtp.starttls.enable", "true");
+        mailServerProperties.put("mail.smtp.starttls.required", "true");
+        mailServerProperties.put("mail.socketFactory.port", "587");
+        mailServerProperties.put("mail.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        mailServerProperties.put("mail.socketFactory.fallback", "false");
         logger.debug("Mail Server Properties have been setup successfully...");
 
         logger.debug("get Mail Session..");

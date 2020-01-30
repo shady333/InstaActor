@@ -7,4 +7,6 @@ public interface Actor {
     Actor stop();
 
     String getStatus();
+
+    boolean isAlive();
 }
