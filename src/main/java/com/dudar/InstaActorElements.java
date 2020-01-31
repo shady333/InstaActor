@@ -23,7 +23,7 @@ public class InstaActorElements {
     }
 
     public static SelenideElement getPostCloseButton() {
-        ElementsCollection collection = $$(By.cssSelector("//button[contains(text(), 'Close')]"));
+        ElementsCollection collection = $$(By.xpath("//button[contains(text(), 'Close')]"));
         if(collection.size() > 0) {
             return collection.get(0);
         }
