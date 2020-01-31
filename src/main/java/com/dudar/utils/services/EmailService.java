@@ -221,33 +221,40 @@ public class EmailService {
         return false;
     }
 
-    public static void generateAndSendEmail(String emailBody) throws MessagingException {
+    public static void generateAndSendEmail(String emailBody){
+        try{
 
-        logger.debug("setup Mail Server Properties..");
-        mailServerProperties = System.getProperties();
-        mailServerProperties.put("mail.smtp.port", "587");
-        mailServerProperties.put("mail.smtp.auth", "true");
-        mailServerProperties.put("mail.smtp.starttls.enable", "true");
-        mailServerProperties.put("mail.smtp.starttls.required", "true");
-        mailServerProperties.put("mail.socketFactory.port", "587");
-        mailServerProperties.put("mail.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-        mailServerProperties.put("mail.socketFactory.fallback", "false");
-        logger.debug("Mail Server Properties have been setup successfully...");
+            logger.debug("setup Mail Server Properties..");
+            mailServerProperties = System.getProperties();
+            mailServerProperties.put("mail.smtp.port", "587");
+            mailServerProperties.put("mail.smtp.auth", "true");
+            mailServerProperties.put("mail.smtp.starttls.enable", "true");
+            mailServerProperties.put("mail.smtp.starttls.required", "true");
+            mailServerProperties.put("mail.socketFactory.port", "587");
+            mailServerProperties.put("mail.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            mailServerProperties.put("mail.socketFactory.fallback", "false");
+            logger.debug("Mail Server Properties have been setup successfully...");
 
-        logger.debug("get Mail Session..");
-        getMailSession = Session.getDefaultInstance(mailServerProperties, null);
-        generateMailMessage = new MimeMessage(getMailSession);
-        generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(Utilities.getEmailTo()));
-        generateMailMessage.setSubject(Utilities.getEmailSubject());
-        generateMailMessage.setContent(emailBody + "<br><br> Regards, <br>InstaActor", "text/html");
-        logger.debug("Mail Session has been created successfully...");
+            logger.debug("get Mail Session..");
+            getMailSession = Session.getDefaultInstance(mailServerProperties, null);
+            generateMailMessage = new MimeMessage(getMailSession);
+            generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(Utilities.getEmailTo()));
+            generateMailMessage.setSubject(Utilities.getEmailSubject());
+            generateMailMessage.setContent(emailBody + "<br><br> Regards, <br>InstaActor", "text/html");
+            logger.debug("Mail Session has been created successfully...");
 
-        logger.debug("Get Session and Send mail");
-        Transport transport = getMailSession.getTransport("smtp");
-        transport.connect("smtp.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
-        transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
-        transport.close();
-        logger.debug("Mail was sent successfully...");
+            logger.debug("Get Session and Send mail");
+            Transport transport = getMailSession.getTransport("smtp");
+            transport.connect("smtp.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
+            transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
+            transport.close();
+            logger.debug("Mail was sent successfully...");
+        }
+        catch (MessagingException ex){
+            logger.error("Can't send Email");
+            logger.error(ex.getMessage());
+        }
+
     }
 
 }

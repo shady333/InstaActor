@@ -21,7 +21,6 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import javax.imageio.ImageIO;
-import javax.lang.model.util.Types;
 import javax.mail.MessagingException;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -36,6 +35,9 @@ import static com.codeborne.selenide.Selenide.*;
 
 public class InstaActor2 implements Runnable, Actor {
 
+    private boolean detectMediaContant = false;
+    private int crashCounter = 0;
+
     enum PostType{
         PHOTO,
         VIDEO,
@@ -45,7 +47,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private List<String> allTags = null;
     private static RemoteWebDriver driver;
-    private boolean isStopped;
+    private boolean isStopped = false;
     private boolean isCompleted = false;
     private String name;
     private Thread t = null;
@@ -75,55 +77,6 @@ public class InstaActor2 implements Runnable, Actor {
     private String addedComment = "";
     private String currentStatus = "";
 
-    private List<String> commentsVideo = new ArrayList<>(Arrays.asList(
-            "Cool Video!",
-            "Cool Video!!!",
-            "Cool video !",
-            "Cool video !!!",
-            "Cool VIDEO!",
-            "Cool VIDEO!!!",
-            "cool video !",
-            "cool video !!!",
-            "Nice Video",
-            "Nice Video !",
-            "Nice Video!!!",
-            "Nice VIDEO !",
-            "NICE VIDEO!",
-            "Good Video!!!",
-            "Good Video"
-    ));
-
-    private List<String> comment1 = new ArrayList<>(Arrays.asList(
-            "Cool",
-            "Nice",
-            "Good"
-    ));
-
-    private List<String> comment2 = new ArrayList<>(Arrays.asList(
-            " shots",
-            " Shots",
-            " picture",
-            " Picture",
-            " photo",
-            " Photo"
-    ));
-
-    private List<String> comment3 = new ArrayList<>(Arrays.asList(
-            ".",
-            "!",
-            "!!!",
-            " !",
-            " !!!",
-            "!!"
-    ));
-
-    private List<String> comments = new ArrayList<>(Arrays.asList(
-            "Awesome!",
-            "AWESOME!!!",
-            "Amazing",
-            "Thumb Up!",
-            "Get my like"
-    ));
     private int totalComments = 0;
 
     public InstaActor2(String name){
@@ -163,6 +116,8 @@ public class InstaActor2 implements Runnable, Actor {
             commentsEnabled = Boolean.parseBoolean(actorProperties.getProperty("comments.enabled"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("debug.mode")))
             debugMode = Boolean.parseBoolean(actorProperties.getProperty("debug.mode"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("detect.media.content")))
+            detectMediaContant = Boolean.parseBoolean(actorProperties.getProperty("detect.media.content"));
     }
 
     public Date getCreationDate(){
@@ -210,7 +165,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void authentificate() {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
-        sleep(3000);
+        sleep(getRandonTimeout());
         $(By.name("username")).val(userName).pressTab();
         $(By.name("password")).val(userPass).pressEnter();
         sleep(3000);
@@ -287,8 +242,8 @@ public class InstaActor2 implements Runnable, Actor {
                     ImageIO.write(saveImage, "jpg", new File(savedImagePath));
 
                     //TODO Image Recognition
-
-                    ImageAnalyzer.imageType(savedImagePath);
+                    if(detectMediaContant)
+                        ImageAnalyzer.imageType(savedImagePath);
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -359,14 +314,12 @@ public class InstaActor2 implements Runnable, Actor {
                 completedTags.forEach(System.out::println);
 //                System.out.println("Total LIKES - " + getTotalLikes());
                 System.out.println("!!!STOP EXECUTION");
-                try {
-                    EmailService.generateAndSendEmail("Unexpected service Stop Action!!! for:</br>"
-                            +"<b>Tag name:</b> " + currentTag + "</br>"
-                            +"<b>Post Url:</b> " + currentPostUrl + "</br>");
-                } catch (MessagingException e) {
-                    logger.debug(e.getLocalizedMessage());
-                }
-                System.exit(1);
+                EmailService.generateAndSendEmail("Unexpected behavior - Stop Action!!! for:<br/>"
+                            +"<b>Tag name:</b> " + currentTag + "<br/>"
+                            +"<b>Post Url:</b> " + currentPostUrl + "<br/>");
+
+                stopExecution();
+
                 resetCurrentPostStatus();
                 return true;
             }
@@ -400,22 +353,22 @@ public class InstaActor2 implements Runnable, Actor {
 
     private String getComment(){
         if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
-            int maxVal = comments.size();
+            int maxVal = InstaActorComments.comments.size();
             int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
-            return comments.get(commentIndex);
+            return InstaActorComments.comments.get(commentIndex);
         }
         else{
             if(this.currentPostType == PostType.VIDEO){
                 logger.info("Return Video comment");
-                return commentsVideo.get(ThreadLocalRandom.current().nextInt(0, commentsVideo.size()));
+                return InstaActorComments.commentsVideo.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.commentsVideo.size()));
             }
             logger.info("Return Other Content comment");
             return
-                    comment1.get(ThreadLocalRandom.current().nextInt(0, comment1.size()))
+                    InstaActorComments.comment1.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment1.size()))
                             .concat(
-                                    comment2.get(ThreadLocalRandom.current().nextInt(0, comment2.size()))
+                                    InstaActorComments.comment2.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment2.size()))
                             ).concat(
-                            comment3.get(ThreadLocalRandom.current().nextInt(0, comment3.size()))
+                            InstaActorComments.comment3.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment3.size()))
                     );
         }
     }
@@ -516,63 +469,56 @@ public class InstaActor2 implements Runnable, Actor {
         return currentStatus;
     }
 
+
+
     @Override
     public void run() {
-        try {
-            EmailService.generateAndSendEmail(viewCurrentParameters().replaceAll("\n", "<br/>"));
-        } catch (MessagingException e) {
-            logger.error("Can't send email message");
-            logger.error(e.getMessage());
-        }
+        EmailService.generateAndSendEmail(viewCurrentParameters().replaceAll("\n", "<br/>"));
 
-        while(!isCompleted) {
-            try {
+        while(!isCompleted && !isStopped) {
+
+            if(crashCounter > 10){
+                stopExecution();
+            }
+
+            if (isStopped) {
+                logger.info(name + " Stop received");
                 isStopped = false;
+                break;
+            }
 
-                while (!isStopped && !isCompleted) {
-                    if (isStopped) {
-                        logger.info(name + " Stop received");
-                        isStopped = false;
-                        break;
-                    }
-
-                    initDriver(debugMode);
-//                initDriver(true);
-                    authentificate();
-                    checkIfPopupShown();
-                    Collections.shuffle(allTags);
-                    int tagsCollectionSize = allTags.size();
-                    AtomicInteger tagCounter = new AtomicInteger(1);
-                    for (String searchTag : allTags) {
-                        if (!completedTags.contains(searchTag)) {
-                            completedTags.add(searchTag);
-                            logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
-                            tagCounter.getAndIncrement();
-                            if (searchByTag(searchTag)) {
-                                interactWithPosts(maxPostsCount);
-                                WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
-                                mouseMoveToElementAndClick(closeButton);
-                            }
+            try{
+                initDriver(debugMode);
+                authentificate();
+                checkIfPopupShown();
+                Collections.shuffle(allTags);
+                int tagsCollectionSize = allTags.size();
+                AtomicInteger tagCounter = new AtomicInteger(1);
+                for (String searchTag : allTags) {
+                    if (!completedTags.contains(searchTag)) {
+                        completedTags.add(searchTag);
+                        logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                        tagCounter.getAndIncrement();
+                        if (searchByTag(searchTag)) {
+                            interactWithPosts(maxPostsCount);
+                            WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+                            mouseMoveToElementAndClick(closeButton);
                         }
                     }
-                    isCompleted = true;
-
-                    //            workMethod();
-
-                    //            logger.info("Ticker - " + tickersCount);
-                    //            tickersCount++;
-                    //            if(tickersCount > 1000){
-                    //                isCompleted = true;
-                    //            }
                 }
-                logger.info(name + " Execution stopped");
-                isStopped = true;
-                EmailService.generateAndSendEmail("Execution stopped");
-            } catch (MessagingException ex) {
+                isCompleted = true;
+                stopExecution();
+                logger.info(getStatus());
+            }
+            catch (Exception ex) {
                 logger.error(ex.getMessage());
-            } catch (Exception ex) {
-                logger.error(ex.getMessage());
-            } finally {
+
+                EmailService.generateAndSendEmail("<p> Service " + name + "crashed with exception:<p>"
+                        + ex.getMessage());
+
+                crashCounter++;
+            }
+            finally {
                 clearSession();
             }
         }
@@ -580,7 +526,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void clearSession(){
         try{
-            isStopped = true;
+//            isStopped = true;
             logger.error("Clear WebDriver session");
             clearBrowserLocalStorage();
             clearBrowserCookies();
@@ -664,27 +610,20 @@ public class InstaActor2 implements Runnable, Actor {
 
         logger.info(name + " - Current status:\n" + currentStatus);
 
-        try {
-            EmailService.generateAndSendEmail(generateStatusForEmail());
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
+        EmailService.generateAndSendEmail(generateStatusForEmail());
 
         return currentStatus;
     }
 
     public void sendStatusViaEmail(){
-        try {
             EmailService.generateAndSendEmail(getStatus().replaceAll("\n", "</br>"));
             creationDate = new Date();
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
     }
 
     public void stopExecution(){
         isStopped = true;
         t = null;
+        logger.info(name + " Execution stopped");
     }
 
     public String getName() {
