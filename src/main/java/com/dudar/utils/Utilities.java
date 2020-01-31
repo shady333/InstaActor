@@ -20,6 +20,7 @@ public class Utilities {
 
     final static Logger logger = Logger.getLogger(Utilities.class);
     private static Properties imaggaApiProperties = null;
+    private static Properties emailProperties = null;
 
     private static boolean gridReady(String urlGrid){
         String gridUrl;
@@ -102,13 +103,56 @@ public class Utilities {
     }
 
     private static void initImaggaProperties(){
-        logger.info("Init properties");
+        logger.debug("Init imagga properties");
         try (InputStream input = new FileInputStream("src/main/resources/access.properties")){
             imaggaApiProperties = new Properties();
             imaggaApiProperties.load(input);
         }
         catch (IOException ex){
-            logger.error("Can't create properties", ex);
+            logger.error("Can't create Imagga properties", ex);
         }
     }
+
+    private static void initEmailProperties(){
+        logger.debug("Init Email properties");
+        try (InputStream input = new FileInputStream("src/main/resources/email.properties")){
+            emailProperties = new Properties();
+            emailProperties.load(input);
+        }
+        catch (IOException ex){
+            logger.error("Can't create Eamil properties", ex);
+        }
+    }
+
+    public static String getEmailTo(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("to.email");
+    }
+
+    public static String getEmailFrom(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("from.email");
+    }
+
+    public static String getEmailSubject(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("subject.email");
+    }
+
+    public static String getEmailUserName(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("username.email");
+    }
+
+    public static String getEmailUserPassword(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("password.email");
+    }
+
+    private static void getEmailPropertiesInstance() {
+        if (emailProperties == null) {
+            initEmailProperties();
+        }
+    }
+
 }
