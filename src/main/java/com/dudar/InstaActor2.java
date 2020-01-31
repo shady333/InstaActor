@@ -21,7 +21,6 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import javax.imageio.ImageIO;
-import javax.mail.MessagingException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +43,8 @@ public class InstaActor2 implements Runnable, Actor {
         GALLERY,
         UNDEFINED
     }
+
+    private Map<String, ArrayList> processedPosts = new HashMap<>();
 
     private List<String> allTags = null;
     private static RemoteWebDriver driver;
@@ -314,9 +315,12 @@ public class InstaActor2 implements Runnable, Actor {
                 completedTags.forEach(System.out::println);
 //                System.out.println("Total LIKES - " + getTotalLikes());
                 System.out.println("!!!STOP EXECUTION");
+
+                ;
+
                 EmailService.generateAndSendEmail("Unexpected behavior - Stop Action!!! for:<br/>"
                             +"<b>Tag name:</b> " + currentTag + "<br/>"
-                            +"<b>Post Url:</b> " + currentPostUrl + "<br/>");
+                            +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
 
                 stopExecution();
 
@@ -414,9 +418,15 @@ public class InstaActor2 implements Runnable, Actor {
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
                 sleep(getRandonTimeout());
+
+                if(processedPosts.get(currentTag).contains(currentPostUrl)){
+                    logger.info("Post was already processed");
+                    logger.info("SKIP - " + currentPostUrl);
+                    continue;
+                }
+
                 detectPostTypeAndAct();
                 if(likePost()){
-
                     if(likesEnabled) {
                         addLikeToPost();
                         if (suspectedActionsDetector())
@@ -446,6 +456,10 @@ public class InstaActor2 implements Runnable, Actor {
             currentStatus += "|\n";
 
             logger.info("Current post info:\n" + currentStatus);
+
+            ArrayList<String> items = processedPosts.get(currentTag);
+            items.add(currentPostUrl);
+            processedPosts.put(currentTag, items);
 
             resetCurrentPostStatus();
 
@@ -495,6 +509,7 @@ public class InstaActor2 implements Runnable, Actor {
                 int tagsCollectionSize = allTags.size();
                 AtomicInteger tagCounter = new AtomicInteger(1);
                 for (String searchTag : allTags) {
+                    processedPosts.put(searchTag, new ArrayList());
                     if (!completedTags.contains(searchTag)) {
                         completedTags.add(searchTag);
                         logger.info("Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
@@ -513,7 +528,7 @@ public class InstaActor2 implements Runnable, Actor {
             catch (Exception ex) {
                 logger.error(ex.getMessage());
 
-                EmailService.generateAndSendEmail("<p> Service " + name + "crashed with exception:<p>"
+                EmailService.generateAndSendEmail("<p> Service <b>" + name + "</b> crashed with exception:<p>"
                         + ex.getMessage());
 
                 crashCounter++;
@@ -590,6 +605,7 @@ public class InstaActor2 implements Runnable, Actor {
             status += "<p>Added comment: " + addedComment;
         }
         status += "<p>Likes added Total: " + totalLiked;
+        status += "<p>Comments added Total: " + totalComments;
         return status;
     }
 
