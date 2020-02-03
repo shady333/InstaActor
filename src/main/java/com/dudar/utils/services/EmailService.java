@@ -165,6 +165,10 @@ public class EmailService {
                             resultAction = ActorActions.STATUS;
                         } else if (actionName.equals("ABORT")) {
                             resultAction = ActorActions.ABORT;
+                        } else if (actionName.equals("REBOOT")) {
+                            resultAction = ActorActions.REBOOT;
+                        } else if (actionName.equals("REGISTER")) {
+                            resultAction = ActorActions.REGISTER;
                         }
 
                     }

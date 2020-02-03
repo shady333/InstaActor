@@ -2,8 +2,12 @@ package com.dudar;
 
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.ActorActions;
+import com.dudar.utils.services.EmailService;
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.log4j.Logger;
+import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -31,50 +35,36 @@ public class ActorsManager {
     }
 
     public void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> action){
-        if(!actorsMap.containsKey(action.getKey())){
-            if(action.getValue() == ActorActions.START){
-                ////!!!!! ONLY FOR LOCAL TEST USAGE
-                if(action.getKey().equalsIgnoreCase("inline")){
-                    Properties prop = new Properties();
-                    try {
-                        prop.load(new FileInputStream("data/inline_user.properties"));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/inline_tags.csv")));
-                }
-                if(action.getKey().equalsIgnoreCase("bricks")){
-                    Properties prop = new Properties();
-                    try {
-                        prop.load(new FileInputStream("data/bricks_user.properties"));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/bricks_tags.csv")));
-                }
-                if(action.getKey().equalsIgnoreCase("neverold")){
-                    Properties prop = new Properties();
-                    try {
-                        prop.load(new FileInputStream("data/neverold_user.properties"));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/neverold_tags.csv")));
-                }
-
-
-//                actorsMap.put(action.getKey(), new InstaActor2(action.getKey()));
-                actorsMap.get(action.getKey()).start();
-            }
-        }
-        else{
+            String message = "";
             switch (action.getValue()){
+                case REBOOT:
+                    message += "<p>Current actors status before reboot:";
+                    message += "<p>" + ActorsManager.getInstance().getAllStatus();
+                    EmailService.generateAndSendEmail(message);
+                    ActorsManager.getInstance().resetAll();
+                    initActorsFromDataFolder();
+                    ActorsManager.getInstance().startAllRegistered();
+                    break;
+                case REGISTER:
+                    try {
+                        Properties prop = new Properties();
+                        prop.load(new FileInputStream("data/" + action.getKey() + "_user.properties"));
+                        actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/" + action.getKey() + "_tags.csv")));
+                    } catch (IOException e) {
+                        logger.error("Can't add item.");
+                        logger.error(e.getMessage());
+                        e.printStackTrace();
+                    }
+                    break;
                 case START:
                     if(!actorsMap.get(action.getKey()).isAlive()){
                         actorsMap.get(action.getKey()).start();
+                        try{
+                            Thread.sleep(10000);
+                        }
+                        catch (Exception ex){
+                            ;
+                        }
                     }
                     logger.info(action.getKey() + " is running");
                     break;
@@ -82,12 +72,40 @@ public class ActorsManager {
                     actorsMap.get(action.getKey()).stop();
                     break;
                 case STATUS:
-                    actorsMap.get(action.getKey()).getStatus();
+                    if(action.getKey().equals("ALL"))
+                    {
+                        message += "<p>Registered actors:";
+                        message += "<p>" + ActorsManager.getInstance().getAllStatus();
+                        EmailService.generateAndSendEmail(message);
+                    }
+                    else{
+                        actorsMap.get(action.getKey()).getStatus();
+                    }
                     break;
                 default:
                     ;
             }
+    }
+
+    public void initActorsFromDataFolder() {
+        final File folder = new File("data");
+        for (final File fileEntry : folder.listFiles()) {
+            if (!fileEntry.isDirectory()) {
+                String itemName = FilenameUtils.getBaseName(fileEntry.getAbsolutePath()).split("_")[0];
+                ActorsManager.getInstance().proceedAction(new AbstractMap.SimpleEntry(itemName, ActorActions.REGISTER));
+            }
         }
+    }
+
+    public void startAllRegistered(){
+        actorsMap.entrySet().forEach(entry->{
+            proceedAction(new AbstractMap.SimpleEntry<>(entry.getKey(), ActorActions.START));
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public String getAllStatus() {
@@ -96,5 +114,12 @@ public class ActorsManager {
             services += "* " + name + " is active - " + actorsMap.get(name).isAlive() + "<br/>";
         }
         return services;
+    }
+
+    public void resetAll() {
+        for(String name : actorsMap.keySet()){
+            actorsMap.get(name).stop();
+        }
+        actorsMap = new HashedMap();
     }
 }

@@ -5,5 +5,7 @@ public enum ActorActions {
     STOP,
     STATUS,
     ABORT,
-    UNDEFINED
+    REGISTER,
+    UNDEFINED,
+    REBOOT
 }
