@@ -39,6 +39,12 @@ public class ActorsManager {
             logger.debug(value.isAlive());
             logger.debug(value.isInterrupted());
             logger.debug(value.getState());
+
+            if(value.getState() == Thread.State.TERMINATED){
+                if(!value.isCompleted()){
+                    value.start();
+                }
+            }
         }
     }
 
@@ -116,6 +122,7 @@ public class ActorsManager {
         String services = "";
         for(String name : actorsMap.keySet()){
             services += "* " + name + " is active - " + actorsMap.get(name).isAlive() + "<br/>";
+            services += "* " + name + " is active - " + actorsMap.get(name).getThreadStatus() + "<br/>";
         }
         return services;
     }

@@ -13,4 +13,8 @@ public interface Actor {
     boolean isInterrupted();
 
     Thread.State getState();
+
+    String getThreadStatus();
+
+    boolean isCompleted();
 }

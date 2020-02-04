@@ -128,6 +128,18 @@ public class InstaActor2 implements Runnable, Actor {
         return running.get();
     }
 
+    public String getThreadStatus(){
+        if(t != null)
+            return t.getState().toString();
+        else
+            return "UNDEFINED";
+    }
+
+    @Override
+    public boolean isCompleted() {
+        return isCompleted;
+    }
+
     @Override
     public boolean isInterrupted(){
         return t.isInterrupted();
@@ -483,8 +495,9 @@ public class InstaActor2 implements Runnable, Actor {
             if (isCompleted) {
                 logger.info("All tags were processed");
                 EmailService.generateAndSendEmail(generateStatusForEmail());
+                stopExecution();
             }
-            while (!isCompleted && !isStopped) {
+            while (!isCompleted || !isStopped) {
                 if (crashCounter > 10) {
                     stopExecution();
                 }
@@ -514,7 +527,7 @@ public class InstaActor2 implements Runnable, Actor {
                         }
                     }
                     isCompleted = true;
-                    stopExecution();
+                    //stopExecution();
                     logger.info(getStatus());
                 } catch (InstaActorStopExecutionException ex) {
                     running.set(false);
@@ -568,7 +581,6 @@ public class InstaActor2 implements Runnable, Actor {
             logger.info("Starting not active thread");
             t = new Thread (this, name);
             t.start ();
-
             isStopped = false;
         }
         return this;
