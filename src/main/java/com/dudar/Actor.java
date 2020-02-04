@@ -17,4 +17,6 @@ public interface Actor {
     String getThreadStatus();
 
     boolean isCompleted();
+
+    boolean isStopped();
 }

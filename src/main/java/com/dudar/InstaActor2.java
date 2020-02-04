@@ -141,6 +141,11 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     @Override
+    public boolean isStopped() {
+        return isStopped;
+    }
+
+    @Override
     public boolean isInterrupted(){
         return t.isInterrupted();
     }
@@ -497,7 +502,7 @@ public class InstaActor2 implements Runnable, Actor {
                 EmailService.generateAndSendEmail(generateStatusForEmail());
                 stopExecution();
             }
-            while (!isCompleted || !isStopped) {
+            while (!isCompleted & !isStopped) {
                 if (crashCounter > 10) {
                     stopExecution();
                 }
@@ -625,6 +630,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     public void stopExecution(){
         running.set(false);
+        isStopped = true;
         logger.info(name + " >>> "  + "Stopping the execution");
     }
 

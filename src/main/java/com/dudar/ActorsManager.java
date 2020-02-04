@@ -41,7 +41,7 @@ public class ActorsManager {
             logger.debug(value.getState());
 
             if(value.getState() == Thread.State.TERMINATED){
-                if(!value.isCompleted()){
+                if(!value.isCompleted() & !value.isStopped()){
                     value.start();
                 }
             }
