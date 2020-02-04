@@ -9,4 +9,8 @@ public interface Actor {
     String getStatus();
 
     boolean isAlive();
+
+    boolean isInterrupted();
+
+    Thread.State getState();
 }

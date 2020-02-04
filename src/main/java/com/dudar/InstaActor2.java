@@ -10,10 +10,7 @@ import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.UnexpectedAlertBehaviour;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
@@ -28,7 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.codeborne.selenide.Selenide.*;
@@ -37,6 +34,8 @@ public class InstaActor2 implements Runnable, Actor {
 
     private boolean detectMediaContant = false;
     private int crashCounter = 0;
+
+    private AtomicBoolean running = new AtomicBoolean(false);
 
     enum PostType{
         PHOTO,
@@ -126,7 +125,17 @@ public class InstaActor2 implements Runnable, Actor {
 
     @Override
     public boolean isAlive(){
-        return isActive;
+        return running.get();
+    }
+
+    @Override
+    public boolean isInterrupted(){
+        return t.isInterrupted();
+    }
+
+    @Override
+    public Thread.State getState(){
+        return t.getState();
     }
 
     private static void initDriver(boolean debug) {
@@ -387,7 +396,7 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private void interactWithPosts(int maxPostsCount){
+    private void interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
         sleep(getRandonTimeout());
@@ -396,6 +405,11 @@ public class InstaActor2 implements Runnable, Actor {
 
         //TODO detect count of available posts. Should not exceed maxPostsCount
         for(int i = 1; i <= maxPostsCount; i++){
+
+            if(!running.get()){
+                throw new InstaActorStopExecutionException();
+            }
+
             currentPostUrl = WebDriverRunner.url();
             $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
@@ -461,58 +475,62 @@ public class InstaActor2 implements Runnable, Actor {
 
     @Override
     public void run() {
-        EmailService.generateAndSendEmail(viewCurrentParameters().replaceAll("\n", "<br/>"));
-        interrupted = false;
-        isStopped = false;
-        isCompleted = false;
-        while(!isCompleted && !isStopped) {
-            if(crashCounter > 10){
-                stopExecution();
+        running.set(true);
+        while (running.get()) {
+            EmailService.generateAndSendEmail(viewCurrentParameters().replaceAll("\n", "<br/>"));
+            interrupted = false;
+            isStopped = false;
+            if (isCompleted) {
+                logger.info("All tags were processed");
+                EmailService.generateAndSendEmail(generateStatusForEmail());
             }
-            if (isStopped) {
-                logger.info(name + " >>> "  + "Stop received");
-                isStopped = false;
-                break;
-            }
-            try{
-                initDriver(debugMode);
-                isActive = true;
-                authentificate();
-                checkIfPopupShown();
-                Collections.shuffle(allTags);
-                int tagsCollectionSize = allTags.size();
-                AtomicInteger tagCounter = new AtomicInteger(1);
-                for (String searchTag : allTags) {
-                    processedPosts.put(searchTag, new ArrayList());
-                    if (!completedTags.contains(searchTag)) {
-                        completedTags.add(searchTag);
-                        logger.info(name + " >>> "  + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
-                        tagCounter.getAndIncrement();
-                        if (searchByTag(searchTag)) {
-                            interactWithPosts(maxPostsCount);
-                            if(!interrupted) {
-                                WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
-                                mouseMoveToElementAndClick(closeButton);
-                            }
-                            else{
-                                break;
+            while (!isCompleted && !isStopped) {
+                if (crashCounter > 10) {
+                    stopExecution();
+                }
+                try {
+                    initDriver(debugMode);
+                    isActive = true;
+                    authentificate();
+                    checkIfPopupShown();
+                    Collections.shuffle(allTags);
+                    int tagsCollectionSize = allTags.size();
+                    AtomicInteger tagCounter = new AtomicInteger(1);
+                    for (String searchTag : allTags) {
+                        processedPosts.put(searchTag, new ArrayList());
+                        if (!completedTags.contains(searchTag)) {
+                            completedTags.add(searchTag);
+                            logger.info(name + " >>> " + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                            tagCounter.getAndIncrement();
+                            if (searchByTag(searchTag)) {
+                                interactWithPosts(maxPostsCount);
+                                if (!interrupted) {
+                                    WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+                                    mouseMoveToElementAndClick(closeButton);
+                                } else {
+                                    break;
+                                }
                             }
                         }
                     }
+                    isCompleted = true;
+                    stopExecution();
+                    logger.info(getStatus());
+                } catch (InstaActorStopExecutionException ex) {
+                    running.set(false);
+                    isStopped = true;
+                    String message = name + ">>> Execution stopped!!!";
+                    logger.info(message);
+                    EmailService.generateAndSendEmail(message + "<p>" + generateStatusForEmail());
+                } catch (Exception ex) {
+                    logger.error(ex.getMessage());
+                    EmailService.generateAndSendEmail("<p> Service <b>" + name + "</b> crashed with exception:<p>"
+                            + ex.getMessage());
+                    isActive = false;
+                    crashCounter++;
+                } finally {
+                    clearSession();
                 }
-                isCompleted = true;
-                stopExecution();
-                logger.info(getStatus());
-            }
-            catch (Exception ex) {
-                logger.error(ex.getMessage());
-                EmailService.generateAndSendEmail("<p> Service <b>" + name + "</b> crashed with exception:<p>"
-                        + ex.getMessage());
-                isActive = false;
-                crashCounter++;
-            }
-            finally {
-                clearSession();
             }
         }
     }
@@ -520,14 +538,12 @@ public class InstaActor2 implements Runnable, Actor {
     private void clearSession(){
         try{
             logger.error(name + " >>> "  + "Clear WebDriver session");
-            clearBrowserLocalStorage();
-            clearBrowserCookies();
-            isActive = false;
-            WebDriverRunner.getWebDriver().quit();
-            TimeUnit.SECONDS.wait(30);
+            driver = null;
+        }
+        catch (IllegalStateException ex){
+            logger.error(name + " >>> "  + ex.getMessage());
         }
         catch (Exception ex){
-            logger.error(name + " >>> "  + "!!!Can't terminate driver");
             logger.error(name + " >>> "  + ex.getMessage());
         }
     }
@@ -541,17 +557,18 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    //TODO require implementation
-    public boolean isActive(){
-        logger.info(name + " >>> "  + "Thread status: " + t.getState());
-        return isActive;
-    }
-
     public Actor start () {
         logger.info(name + " >>> "  + "Starting...");
         if (t == null) {
             t = new Thread (this, name);
             t.start ();
+
+            isStopped = false;
+        } else if (t.getState() == Thread.State.TERMINATED) {
+            logger.info("Starting not active thread");
+            t = new Thread (this, name);
+            t.start ();
+
             isStopped = false;
         }
         return this;
@@ -560,8 +577,8 @@ public class InstaActor2 implements Runnable, Actor {
     @Override
     public Actor stop() {
         logger.info(name + " >>> "  + "STOP");
-        stopExecution();
         clearSession();
+        stopExecution();
         return this;
     }
 
@@ -595,10 +612,8 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     public void stopExecution(){
-        isStopped = true;
-        isActive = false;
-        t = null;
-        logger.info(name + " >>> "  + "Execution stopped");
+        running.set(false);
+        logger.info(name + " >>> "  + "Stopping the execution");
     }
 
     public String getName() {

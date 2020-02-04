@@ -31,6 +31,8 @@ public class Runner {
         EmailService.generateAndSendEmail("InstaActor service is UP and running");
         while(true)
         {
+            ActorsManager.getInstance().trackActiveServices();
+
             currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
             if(currentAction.getValue() == ActorActions.ABORT){
                 EmailService.generateAndSendEmail("<h1>!!!STOP FOR EXECUTION!!!");
@@ -43,8 +45,7 @@ public class Runner {
                 ActorsManager.getInstance().proceedAction(currentAction);
                 lastActionDate = new Date();
             }
-            TimeUnit.SECONDS.sleep(60);
+            TimeUnit.SECONDS.sleep(30);
         }
-
     }
 }

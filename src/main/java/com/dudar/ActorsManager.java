@@ -34,6 +34,14 @@ public class ActorsManager {
         return instance;
     }
 
+    public void trackActiveServices(){
+        for(Actor value: actorsMap.values()){
+            logger.debug(value.isAlive());
+            logger.debug(value.isInterrupted());
+            logger.debug(value.getState());
+        }
+    }
+
     public void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> action){
             String message = "";
             switch (action.getValue()){
@@ -100,11 +108,7 @@ public class ActorsManager {
     public void startAllRegistered(){
         actorsMap.entrySet().forEach(entry->{
             proceedAction(new AbstractMap.SimpleEntry<>(entry.getKey(), ActorActions.START));
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
         });
     }
 
