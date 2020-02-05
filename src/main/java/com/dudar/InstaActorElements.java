@@ -23,13 +23,13 @@ public class InstaActorElements {
     }
 
     public static SelenideElement getPostCloseButton() {
-        ElementsCollection collection = $$(By.xpath("//button[contains(text(), 'Close')]"));
+        ElementsCollection collection = $$(By.cssSelector("svg[aria-label=\"Close\"]"));
         if(collection.size() > 0) {
             return collection.get(0);
         }
         else {
-            logger.debug("Close Post button not available");
-            return null;
+            logger.error("Close Post button not available");
+            throw new AssertionError("Cam't find element - Close Post Button");
         }
     }
 

@@ -428,7 +428,7 @@ public class InstaActor2 implements Runnable, Actor {
             }
 
             currentPostUrl = WebDriverRunner.url();
-            $(By.xpath("//button[contains(text(), 'Close')]")).shouldBe(Condition.visible).shouldBe(Condition.enabled);
+            InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
                 sleep(getRandonTimeout());
                 if(processedPosts.get(currentTag).contains(currentPostUrl)){
@@ -505,6 +505,9 @@ public class InstaActor2 implements Runnable, Actor {
             while (!isCompleted & !isStopped) {
                 if (crashCounter > 10) {
                     stopExecution();
+                    EmailService.generateAndSendEmail("CrashCounter exceed max value for - <b>" + name
+                            + "</b><p>Stop execution.<p>"+generateStatusForEmail());
+                    break;
                 }
                 try {
                     initDriver(debugMode);
@@ -534,7 +537,13 @@ public class InstaActor2 implements Runnable, Actor {
                     isCompleted = true;
                     //stopExecution();
                     logger.info(getStatus());
-                } catch (InstaActorStopExecutionException ex) {
+                }
+                catch (AssertionError err){
+                    logger.info("Selenide error: " + err.getMessage());
+                    EmailService.generateAndSendEmail("SELENIDE Assert Error: " + err.getMessage());
+                    crashCounter++;
+                }
+                catch (InstaActorStopExecutionException ex) {
                     running.set(false);
                     isStopped = true;
                     String message = name + ">>> Execution stopped!!!";
@@ -577,16 +586,15 @@ public class InstaActor2 implements Runnable, Actor {
 
     public Actor start () {
         logger.info(name + " >>> "  + "Starting...");
+        isStopped = false;
+        crashCounter = 0;
         if (t == null) {
             t = new Thread (this, name);
             t.start ();
-
-            isStopped = false;
         } else if (t.getState() == Thread.State.TERMINATED) {
             logger.info("Starting not active thread");
             t = new Thread (this, name);
             t.start ();
-            isStopped = false;
         }
         return this;
     }
