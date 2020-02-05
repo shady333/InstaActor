@@ -20,7 +20,7 @@ public class InstaActorElements {
     }
 
     public static SelenideElement getPostLikeButton() {
-        return getControl("Post Like button", By.cssSelector("svg[aria-label=\"Like\"][height=\"24\"]"));
+        return getControlNoException("Post Like button", By.cssSelector("svg[aria-label=\"Like\"][height=\"24\"]"));
     }
 
     public static SelenideElement getPostCloseButton() {
@@ -37,6 +37,19 @@ public class InstaActorElements {
                     +" by locator " + by.toString();
             logger.error(errorMessage);
             throw new AssertionError(errorMessage);
+        }
+    }
+
+    private static SelenideElement getControlNoException(String name, By by){
+        ElementsCollection collection = $$(by);
+        if(collection.size() > 0) {
+            return collection.get(0);
+        }
+        else {
+            String errorMessage = "Can't find element - " + name
+                    +" by locator " + by.toString();
+            logger.error(errorMessage);
+            return null;
         }
     }
 

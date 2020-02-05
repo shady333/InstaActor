@@ -319,10 +319,15 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void addLikeToPost() {
-        logger.info(getName() + "Like post");
-        mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-        currentPostLikeAdded = true;
-        totalLiked++;
+        if(InstaActorElements.getPostLikeButton() != null){
+            logger.info(getName() + "Like post");
+            mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+            currentPostLikeAdded = true;
+            totalLiked++;
+        }
+        else{
+            logger.info(getName() + "Post already Liked.");
+        }
     }
 
     private void resetCurrentPostStatus() {

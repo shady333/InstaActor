@@ -25,7 +25,8 @@ public class InstaActorComments {
     static List<String> comment1 = new ArrayList<>(Arrays.asList(
             "Cool",
             "Nice",
-            "Good"
+            "Good",
+            "Wow"
     ));
     static List<String> comment2 = new ArrayList<>(Arrays.asList(
             " shots",
