@@ -7,17 +7,17 @@ of automation usage on social networks services.
 You can use application on your own risk and responsibility.
 
 ## Requirements:
-    Docker installed;
-    Java 1.8;
-    Luck and :raised_hands: from the right place :monkey:
+* Docker installed;
+* Java 1.8;
+* Luck and :raised_hands: from the right place :monkey:
 
 ## Optional:
-    gmail account for tracking actions. [more info](#setup-and-configure-email-service)
+gmail account for tracking actions. [more info](#setup-and-configure-email-service)
 
 # Steps to configure and execute:
 1. Download git repo sources
 2. Open "data" folder and update(and/or add more) files:
-    1. Modify __*_user.properties__ file with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
+    1. Modify __*user.properties__ file with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
     2. Modify __*tags.csv__ file with required tags to be used.
     All tags should be comma separated without spaces.
 3. Modify access to other 3rd party services (optional):
@@ -38,14 +38,15 @@ You can use application on your own risk and responsibility.
    ```
 
 # InstaActor configuration parameters
-__*_user.properties__
+__*user.properties__
+
 |Parameter|Value|Comment|
 |:---|:---|:---|
 |hub.host|String|not used|
 |hub.port|int|not used|
 |view.min.delay|int|Minimum time for stay at the Image post (ms)|
 |view.max.delay|int|Maximum time to stay at the Image post (ms)|
-|...|...|...
+|...|...|...|
 
 # Setup and configure email service
 Current implementation uses gmail as an smtp service. You have to provide your gmail account credentials and configure your account properly.
