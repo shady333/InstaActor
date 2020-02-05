@@ -11,25 +11,32 @@ public class InstaActorElements {
 
     final static Logger logger = Logger.getLogger(InstaActorElements.class);
 
+    public static SelenideElement getUserLoginInput(){
+        return getControl("User Login input", By.name("username"));
+    }
+
+    public static SelenideElement getUserPasswordInput(){
+        return getControl("User Password input", By.name("password"));
+    }
+
     public static SelenideElement getPostLikeButton() {
-        ElementsCollection collection = $$(By.cssSelector("svg[aria-label=\"Like\"][height=\"24\"]"));
-        if(collection.size() > 0) {
-            return collection.get(0);
-        }
-        else {
-            logger.debug("Like button is not available or already Liked");
-            return null;
-        }
+        return getControl("Post Like button", By.cssSelector("svg[aria-label=\"Like\"][height=\"24\"]"));
     }
 
     public static SelenideElement getPostCloseButton() {
-        ElementsCollection collection = $$(By.cssSelector("svg[aria-label=\"Close\"]"));
+        return getControl("Close Post button", By.cssSelector("svg[aria-label=\"Close\"]"));
+    }
+
+    private static SelenideElement getControl(String name, By by){
+        ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
             return collection.get(0);
         }
         else {
-            logger.error("Close Post button not available");
-            throw new AssertionError("Cam't find element - Close Post Button");
+            String errorMessage = "Can't find element - " + name
+                    +" by locator " + by.toString();
+            logger.error(errorMessage);
+            throw new AssertionError(errorMessage);
         }
     }
 

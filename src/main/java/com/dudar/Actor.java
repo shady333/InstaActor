@@ -2,6 +2,8 @@ package com.dudar;
 
 public interface Actor {
 
+    String getName();
+
     Actor start();
 
     Actor stop();

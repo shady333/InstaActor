@@ -36,9 +36,9 @@ public class ActorsManager {
 
     public void trackActiveServices(){
         for(Actor value: actorsMap.values()){
-            logger.debug(value.isAlive());
-            logger.debug(value.isInterrupted());
-            logger.debug(value.getState());
+            logger.debug(value.getName() + "isAlive - "+value.isAlive());
+            logger.debug(value.getName() + "isInterrupted - "+value.isInterrupted());
+            logger.debug(value.getName() + "State - "+value.getState());
 
             if(value.getState() == Thread.State.TERMINATED){
                 if(!value.isCompleted() & !value.isStopped()){

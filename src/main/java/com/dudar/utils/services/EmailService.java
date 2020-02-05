@@ -187,51 +187,6 @@ public class EmailService {
         return new AbstractMap.SimpleEntry<>(resultActorName, resultAction);
     }
 
-    @Deprecated
-    public static boolean isStopMessage(String sender, String serviceName, Date date) throws MessagingException {
-        //create properties field
-        Properties properties = new Properties();
-
-        properties.put("mail.pop3.host", "pop.gmail.com");
-        properties.put("mail.pop3.port", "995");
-        properties.put("mail.pop3.starttls.enable", "true");
-        properties.put("mail.store.protocol", "imaps");
-
-        Session emailSession = Session.getDefaultInstance(properties);
-
-        //create the POP3 store object and connect with the pop server
-        Store store = emailSession.getStore("imaps");
-
-        store.connect("pop.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
-
-        //create the folder object and open it
-        Folder emailFolder = store.getFolder("INBOX");
-        emailFolder.open(Folder.READ_ONLY);
-
-        // retrieve the messages from the folder in an array and print it
-        Message[] messages = emailFolder.search(new FlagTerm(new Flags(
-                Flags.Flag.SEEN), false));
-        logger.info("messages.length---" + messages.length);
-
-        for (int i = 0, n = messages.length; i < n; i++) {
-            Message message = messages[i];
-
-            if(message.getSentDate().after(date)){
-                if(message.getSubject().contains("STOP") & message.getSubject().contains(serviceName)){
-                    if(message.getFrom()[0].toString().contains(sender)){
-                        return true;
-                    }
-                }
-            }
-        }
-
-        //close the store and folder objects
-        emailFolder.close(false);
-        store.close();
-
-        return false;
-    }
-
     public static void generateAndSendEmail(String emailBody){
         try{
 
@@ -311,15 +266,6 @@ public class EmailService {
 
             // Send the complete message parts
             generateMailMessage.setContent(multipart,"text/html");
-
-
-
-
-
-
-//            generateMailMessage.setContent(emailBody + "<br><br> Regards, <br>InstaActor", "text/html");
-
-
 
             logger.debug("Mail Session has been created successfully...");
 
