@@ -24,5 +24,4 @@ RUN mvn -T 1C install && rm -rf target
 COPY src /usr/src/app/src
 COPY tmp /usr/src/app/tmp
 COPY data /usr/src/app/data
-RUN mvn compile
-#RUN mvn exec:java -Dexec.mainClass="com.dudar.runner.Runner" -Dexec.args="arg0 arg1 arg2"
+RUN mvn clean compile

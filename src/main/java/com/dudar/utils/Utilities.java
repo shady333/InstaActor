@@ -126,12 +126,7 @@ public class Utilities {
 
     public static String getEmailTo(){
         getEmailPropertiesInstance();
-        return emailProperties.getProperty("to.email");
-    }
-
-    public static String getEmailFrom(){
-        getEmailPropertiesInstance();
-        return emailProperties.getProperty("from.email");
+        return emailProperties.getProperty("actions.email");
     }
 
     public static String getEmailSubject(){
@@ -147,6 +142,11 @@ public class Utilities {
     public static String getEmailUserPassword(){
         getEmailPropertiesInstance();
         return emailProperties.getProperty("password.email");
+    }
+
+    public static String getActionsUserEmail(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("actions.email");
     }
 
     private static void getEmailPropertiesInstance() {
