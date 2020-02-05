@@ -1,33 +1,53 @@
-## General info
-Simple application :alien: for interactions with Instagram service to emulate user actions such as, "Like" :heart: and comment :pencil2: post.
-Application written :computer: in research purpose to evaluate posibility of automation usage on social networks services.
+# General info
+Simple application :alien: for interactions with Instagram service.
+Its emulate user actions such as, "Like" :heart: and comment :pencil2: post.
+Application written :computer: in research purpose to evaluate possibility
+of automation usage on social networks services.
 
 You can use application on your own risk and responsibility.
 
 ## Requirements:
     Docker installed;
+    Java 1.8;
+    Luck and :raised_hands: from the right place :monkey:
 
-## Steps to execute:
-1. Modify __*.properties__ file with your Instagram account info and enable required actions
-2. Modify __*tags.csv__ file with required tags to be used
-4. Modify __access.properties__ file with your credentials at imagoo service
-3. Build an Docker image:
+## Optional:
+    gmail account for tracking actions. [more info](#setup-and-configure-email-service)
+
+# Steps to configure and execute:
+1. Download git repo sources
+2. Open "data" folder and update(and/or add more) files:
+    1. Modify __*_user.properties__ file with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
+    2. Modify __*tags.csv__ file with required tags to be used.
+    All tags should be comma separated without spaces.
+3. Modify access to other 3rd party services (optional):
+    1. IMAGOO service: __src/main/resources/access.properties__, update file with your credentials for imagoo service
+    2. Gmail service: __src/main/resources/email.properties__, update file with your credentials for gmail service
+4. Build an Docker image:
     ```
-    'docker image build -t instaactor:v0.1 .'
+    'docker image build -t instaactor:v0.2 .'
    ```
-4. Execute image with parameters:
+5. Execute image with parameters:
     ```
     'docker-compose up'
    ```
-5. Wait till application finish.
-5. Stop:
+6. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
+5. To Stop execution - stop the process "Ctrl+C" and shut down containers:
     ```
     'docker-compose down'
    ```
 
-## Setup
+# InstaActor configuration parameters
+__*_user.properties__
+|Parameter|Value|Comment|
+|:---|:---|:---|
+|hub.host|String|not used|
+|hub.port|int|not used|
+|view.min.delay|int|Minimum time for stay at the Image post (ms)|
+|view.max.delay|int|Maximum time to stay at the Image post (ms)|
+|...|...|...
 
-### email service
+# Setup and configure email service
 Current implementation uses gmail as an smtp service. You have to provide your gmail account credentials and configure your account properly.
 My recomendation is to setup additional gmail account for this purposes.
 
