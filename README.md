@@ -13,17 +13,20 @@ You can use application on your own risk and responsibility.
 
 ## Optional:
 * gmail account for tracking actions. [more info](#setup-and-configure-email-service)
-* imagoo account for image recognition possibilities.
+* imagga account for image recognition possibilities. [IMAGGA Service](https://imagga.com/)
 
 # Steps to configure and execute
+
+## Run service inside Docker
+
 1. Download git repo sources
 2. Open "data" folder and update(and/or add more) files:
     1. Modify __*user.properties__ file (it should be like __myInsta_user.properties__) with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
     2. Modify __*tags.csv__ file (it should be like __myInsta_tags.properties__) with required tags to be used.
     All tags should be comma separated without spaces.
 3. Modify access to other 3rd party services (optional):
-    1. IMAGOO service: __src/main/resources/access.properties__, update file with your credentials for imagoo service
-    2. [Gmail service](#Setup-and-configure-email-service): __src/main/resources/email.properties__, update file with your credentials for gmail service
+    1. IMAGGA service: __access.properties__, update file with your credentials for imagga service
+    2. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
 4. Build an Docker image:
     ```
     'docker image build -t instaactor:v0.2 .'
@@ -33,10 +36,23 @@ You can use application on your own risk and responsibility.
     'docker-compose up'
    ```
 6. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
-5. To Stop execution - stop the process "Ctrl+C" and shut down containers:
+7. To Stop execution - stop the process "Ctrl+C" and shut down containers:
     ```
     'docker-compose down'
    ```
+
+## Run service as a java process
+
+1. Download git repo sources
+2. Open "data" folder and update(and/or add more) files:
+    1. Modify __*user.properties__ file (it should be like __myInsta_user.properties__) with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
+    2. Modify __*tags.csv__ file (it should be like __myInsta_tags.properties__) with required tags to be used.
+    All tags should be comma separated without spaces.
+3. Modify access to other 3rd party services (optional):
+    1. IMAGGA service: __access.properties__, update file with your credentials for imagga service
+    2. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
+4. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
+5. To Stop execution - stop the process "Ctrl+C"
 
 # InstaActor configuration parameters
 __*user.properties__
@@ -69,7 +85,7 @@ Check account configuration:
 1. [Two Step Verification should be turned off](https://support.google.com/accounts/answer/1064203?hl=en).
 2. [Allow Less Secure App(should be turned on)](https://myaccount.google.com/lesssecureapps).
 
-Update __src/main/resources/email.properties__ with your account credentials and setup recipients and correct message subject if needed.
+Update __data/email.properties__ with your account credentials and setup recipients and correct message subject if needed.
 
 |Property|Description|
 |:---|:---|

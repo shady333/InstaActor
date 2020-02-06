@@ -185,6 +185,7 @@ public class InstaActor2 implements Runnable, Actor {
                 chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                         UnexpectedAlertBehaviour.IGNORE);
                 chromeOptions.setHeadless(true);
+                chromeOptions.addArguments("enable-automation --no-sandbox --disable-infobars --disable-dev-shm-usage --disable-browser-side-navigation --disable-gpu");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
                 System.out.println("!!!Can't init DRIVER");
@@ -206,10 +207,38 @@ public class InstaActor2 implements Runnable, Actor {
         sleep(3000);
     }
 
+    private void waitTillPageLoadedAndSearchAvailable(){
+        int retriesCounter = 0;
+        while(true){
+            ElementsCollection items = $$(By.cssSelector("input[placeholder=\"Search\"]"));
+            if(items.size() > 0){
+                items.get(0).shouldBe(Condition.visible);
+                return;
+            }
+            if(retriesCounter > 10){
+                logger.error("Search control is not in expected state");
+                return;
+            }
+            retriesCounter++;
+            waitSomeTime(1000);
+        }
+    }
+
+    private void waitSomeTime(int duration){
+        try {
+            Thread.sleep(duration);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void checkIfPopupShown() {
 
-        $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
+//        $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
+//        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
+
+        waitTillPageLoadedAndSearchAvailable();
+
         ElementsCollection popupWindow = $$(By.xpath("//div[attribute::role='dialog']"));
         if(popupWindow.size() > 0){
             String popupText = popupWindow.get(0).find("h2").getText();
@@ -237,16 +266,17 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private boolean searchByTag(String searchTag) {
+        sleep(1000);
         SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
         mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
         searchBox.val("#"+searchTag);
         sleep(3000);
         $(By.xpath("//div[contains(@class,'SearchClear')]")).shouldBe(Condition.visible);
         searchBox.sendKeys(Keys.DOWN, Keys.ENTER);
-        sleep(getRandonTimeout());
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
-        SelenideElement tagLocator = $(By.cssSelector("main h1"));
         sleep(5000);
+        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
+        SelenideElement tagLocator = $(By.cssSelector("main h1")).shouldBe(Condition.exist);
+
         logger.info(getName()  + "Current page Tag - "+tagLocator.getText());
         if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
             currentTag = searchTag;
@@ -284,8 +314,8 @@ public class InstaActor2 implements Runnable, Actor {
             else
             {
                 for(int i =1; i < imagePost.size(); i++){
-                    System.out.println("Navigate to next image > " + i);
-                    mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")));
+                    logger.info(getName() + "Navigate to next image > " + i);
+                    mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).shouldBe(Condition.visible));
                 }
                 currentPostType = PostType.GALLERY;
                 return;
@@ -379,7 +409,7 @@ public class InstaActor2 implements Runnable, Actor {
         int max = 100;
         boolean result = false;
         if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
-            System.out.println(Utilities.getCurrentTimestamp() + "Add Comment");
+            logger.info(getName() + "Add Comment");
             result = true;
         }
         return result;
@@ -491,8 +521,16 @@ public class InstaActor2 implements Runnable, Actor {
             items.add(currentPostUrl);
             processedPosts.put(currentTag, items);
             resetCurrentPostStatus();
-            WebElement nextPostButton = $(By.xpath("//a[contains(text(), 'Next')]")).shouldBe(Condition.visible);
-            mouseMoveToElementAndClick(nextPostButton);
+
+            ElementsCollection nextButtonElements = $$(By.xpath("//a[contains(text(), 'Next')]"));
+            if(nextButtonElements.size() > 0){
+                nextButtonElements.get(0).shouldBe(Condition.visible);
+                mouseMoveToElementAndClick(nextButtonElements.get(0));
+            }
+            else{
+                logger.info("No more next elements");
+                break;
+            }
             sleep(getRandonTimeout());
         }
     }
@@ -561,7 +599,7 @@ public class InstaActor2 implements Runnable, Actor {
                 catch (AssertionError err){
                     logger.info("Selenide error: " + err.getMessage());
                     sendEmailMessage(getName() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
-                    crashCounter++;
+                    //crashCounter++;
                 }
                 catch (InstaActorStopExecutionException ex) {
                     running.set(false);

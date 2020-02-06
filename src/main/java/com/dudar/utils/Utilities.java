@@ -104,7 +104,7 @@ public class Utilities {
 
     private static void initImaggaProperties(){
         logger.debug("Init imagga properties");
-        try (InputStream input = new FileInputStream("src/main/resources/access.properties")){
+        try (InputStream input = new FileInputStream("data/access.properties")){
             imaggaApiProperties = new Properties();
             imaggaApiProperties.load(input);
         }
@@ -115,7 +115,7 @@ public class Utilities {
 
     private static void initEmailProperties(){
         logger.debug("Init Email properties");
-        try (InputStream input = new FileInputStream("src/main/resources/email.properties")){
+        try (InputStream input = new FileInputStream("data/email.properties")){
             emailProperties = new Properties();
             emailProperties.load(input);
         }

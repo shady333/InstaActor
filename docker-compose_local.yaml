@@ -1,0 +1,86 @@
+# To execute this docker-compose yml file use `docker-compose -f <file_name> up`
+# Add the `-d` flag at the end for detached execution
+version: "3"
+services:
+  selenium-hub:
+    image: selenium/hub:3.141.59-zinc
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+    environment:
+      - GRID_MAX_SESSION=10
+      - GRID_BROWSER_TIMEOUT=420
+      - GRID_TIMEOUT=420
+      - GRID_CLEAN_UP_CYCLE=5000
+      - JAVA_OPTS=-Xms2g -Xmx6g
+    depends_on:
+      - insta-actor
+
+  chrome1:
+    image: selenium/node-chrome:3.141.59-zinc
+    volumes:
+      - /dev/shm:/dev/shm
+    depends_on:
+      - selenium-hub
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+#      - GRID_TIMEOUT=420
+#      - TIMEOUT=420
+      - CLEAN_UP_CYCLE=5000
+      - NODE_MAX_INSTANCES=4
+      - NODE_MAX_SESSION=4
+      - NODE_POLLING=5000
+      - NODE_UNREGISTER_IF_STILL_DOWN_AFTER=60000
+      - NODE_DOWN_POLLING_LIMIT=2
+    deploy:
+      replicas: 1
+    entrypoint: bash -c 'SE_OPTS="-host $$HOSTNAME" /opt/bin/entry_point.sh'
+
+  chrome2:
+    image: selenium/node-chrome:3.141.59-zinc
+    volumes:
+      - /dev/shm:/dev/shm
+    depends_on:
+      - selenium-hub
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+#      - TIMEOUT=420
+#      - GRID_TIMEOUT=420
+      - CLEAN_UP_CYCLE=5000
+      - NODE_MAX_INSTANCES=4
+      - NODE_MAX_SESSION=4
+      - NODE_POLLING=5000
+      - NODE_UNREGISTER_IF_STILL_DOWN_AFTER=60000
+      - NODE_DOWN_POLLING_LIMIT=2
+    deploy:
+      replicas: 1
+    entrypoint: bash -c 'SE_OPTS="-host $$HOSTNAME" /opt/bin/entry_point.sh'
+
+#  chrome3:
+#    image: selenium/node-chrome:3.141.59-zinc
+#    volumes:
+#      - /dev/shm:/dev/shm
+#    depends_on:
+#      - selenium-hub
+#    environment:
+#      - HUB_HOST=selenium-hub
+#      - HUB_PORT=4444
+#      - TIMEOUT=120000
+#      - GRID_TIMEOUT=120000
+##      - CLEAN_UP_CYCLE=60000
+#      - NODE_MAX_INSTANCES=2
+#      - NODE_MAX_SESSION=2
+#    deploy:
+#      replicas: 1
+#    entrypoint: bash -c 'SE_OPTS="-host $$HOSTNAME" /opt/bin/entry_point.sh'
+
+  insta-actor:
+    image: shady333/instaactor2:v0.2
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+      - JAVA_OPTS=-Xmx4g
+    command: >
+      exec:java -Dexec.mainClass=com.dudar.runner.Runner -Dlog4j.configuration=file:/usr/src/app/src/main/resources/log4j.properties -Dexec.args="-Doption=START"

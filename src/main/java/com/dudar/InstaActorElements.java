@@ -1,5 +1,6 @@
 package com.dudar;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import org.apache.log4j.Logger;
@@ -30,7 +31,7 @@ public class InstaActorElements {
     private static SelenideElement getControl(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
-            return collection.get(0);
+            return collection.get(0).shouldBe(Condition.visible);
         }
         else {
             String errorMessage = "Can't find element - " + name
@@ -43,7 +44,7 @@ public class InstaActorElements {
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
-            return collection.get(0);
+            return collection.get(0).shouldBe(Condition.visible);
         }
         else {
             String errorMessage = "Can't find element - " + name
