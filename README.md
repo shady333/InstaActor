@@ -51,8 +51,9 @@ You can use application on your own risk and responsibility.
 3. Modify access to other 3rd party services (optional):
     1. IMAGGA service: __access.properties__, update file with your credentials for imagga service
     2. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
+4. Execute "__runAll.sh__" file.
 4. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
-5. To Stop execution - stop the process "Ctrl+C"
+5. To Stop execution - stop the process "Ctrl+C".
 
 # InstaActor configuration parameters
 __*user.properties__
