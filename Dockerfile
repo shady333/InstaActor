@@ -22,6 +22,6 @@ COPY pom.xml /usr/src/app
 RUN mvn -T 1C install && rm -rf target
 # copy other source files (keep in image)
 COPY src /usr/src/app/src
+COPY tmp /usr/src/app/tmp
 COPY data /usr/src/app/data
-RUN mvn compile
-#RUN mvn exec:java -Dexec.mainClass="com.dudar.runner.Runner" -Dexec.args="arg0 arg1 arg2"
+RUN mvn clean compile
