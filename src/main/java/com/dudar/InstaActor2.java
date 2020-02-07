@@ -185,7 +185,11 @@ public class InstaActor2 implements Runnable, Actor {
                 chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                         UnexpectedAlertBehaviour.IGNORE);
                 chromeOptions.setHeadless(true);
-                chromeOptions.addArguments("enable-automation --no-sandbox --disable-infobars --disable-dev-shm-usage --disable-browser-side-navigation --disable-gpu");
+                chromeOptions.addArguments("no-sandbox");
+                chromeOptions.addArguments("enable-automation");
+                chromeOptions.addArguments("remote-debugging-port=9222");
+//                chromeOptions.addArguments(" --no-sandbox --disable-infobars " +
+//                        "--disable-dev-shm-usage --disable-browser-side-navigation --disable-gpu --remote-debugging-port=9222");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
                 System.out.println("!!!Can't init DRIVER");
@@ -609,10 +613,18 @@ public class InstaActor2 implements Runnable, Actor {
                     sendEmailMessage(message + "<p>" + generateStatusForEmail());
                 } catch (Exception ex) {
                     logger.error(ex.getMessage());
-                    sendEmailMessage("<p> Service <b>" + name + "</b> crashed with exception:<p>"
-                            + ex.getMessage(), screenshot("tmp/crash/crash_exception_info.png"));
-                    isActive = false;
-                    crashCounter++;
+                    if(ex.getMessage().contains("DevToolsActivePort file doesn't exist"))
+                    {
+                        logger.error("Chrome driver error\n" + ex.getMessage());
+                    } else if(ex.getMessage().contains("Timed out waiting for driver server to start.")){
+                        logger.error("Chrome driver error\n" + ex.getMessage());
+                    }
+                    else {
+                        sendEmailMessage("<p> Service <b>" + name + "</b> crashed with exception:<p>"
+                                + ex.getMessage(), screenshot("tmp/crash/crash_exception_info.png"));
+                        isActive = false;
+                        crashCounter++;
+                    }
                 } finally {
                     clearSession();
                 }
