@@ -44,7 +44,7 @@ public class InstaActorElements {
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
-            return collection.get(0).shouldBe(Condition.visible);
+            return collection.get(0).waitUntil(Condition.visible, 30000);
         }
         else {
             String errorMessage = "Can't find element - " + name

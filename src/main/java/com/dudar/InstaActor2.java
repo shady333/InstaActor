@@ -275,7 +275,7 @@ public class InstaActor2 implements Runnable, Actor {
         mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
         searchBox.val("#"+searchTag);
         sleep(3000);
-        $(By.xpath("//div[contains(@class,'SearchClear')]")).shouldBe(Condition.visible);
+        $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
         searchBox.sendKeys(Keys.DOWN, Keys.ENTER);
         sleep(5000);
         $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);

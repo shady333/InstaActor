@@ -11,7 +11,7 @@ function ctrl_c() {
 
 #Phase 2. Start selenium grid
 echo "starting Selenium GRID in docker"
-docker-compose -f docker-compose-gridonly.yaml up -d
+docker-compose -f docker-compose-gridonly.yaml --compatibility up -d
 
 #Phase 3. Compile application
 echo "compile application service"
