@@ -187,7 +187,7 @@ public class InstaActor2 implements Runnable, Actor {
                 chromeOptions.setHeadless(true);
                 chromeOptions.addArguments("--no-sandbox");
                 chromeOptions.addArguments("--enable-automation");
-                chromeOptions.addArguments("--remote-debugging-port=9222");
+//                chromeOptions.addArguments("--remote-debugging-port=9222");
 //                chromeOptions.addArguments(" --no-sandbox --disable-infobars " +
 //                        "--disable-dev-shm-usage --disable-browser-side-navigation --disable-gpu --remote-debugging-port=9222");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
