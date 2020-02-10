@@ -83,6 +83,8 @@ public class InstaActor2 implements Runnable, Actor {
 
     private int totalComments = 0;
 
+    private boolean repeatActionsAfterComplete = false;
+
     public InstaActor2(String name, Properties actorProperties, List<String> tags){
         this.name = name;
         creationDate = new Date();
@@ -119,6 +121,8 @@ public class InstaActor2 implements Runnable, Actor {
             detectMediaContant = Boolean.parseBoolean(actorProperties.getProperty("detect.media.content"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("email.service")))
             emailServiceEnabled = Boolean.parseBoolean(actorProperties.getProperty("email.service"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("service.repeat")))
+            repeatActionsAfterComplete = Boolean.parseBoolean(actorProperties.getProperty("service.repeat"));
     }
 
     private void sendEmailMessage(String message){
@@ -568,8 +572,25 @@ public class InstaActor2 implements Runnable, Actor {
             isStopped = false;
             if (isCompleted) {
                 logger.info("All tags were processed");
-                sendEmailMessage(generateStatusForEmail());
-                stopExecution();
+                String message = getName() + " execution completed.</br>";
+                sendEmailMessage(message + generateStatusForEmail());
+                if(repeatActionsAfterComplete){
+                    try {
+                        interrupted = false;
+                        isStopped = false;
+                        isCompleted = false;
+                        crashCounter = 0;
+                        defectedTags = new ArrayList<>();
+                        completedTags = new ArrayList<>();
+                        Thread.sleep(60000);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    stopExecution();
+                }
             }
             while (!isCompleted & !isStopped) {
                 if (crashCounter > 10) {

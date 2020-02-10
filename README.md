@@ -7,12 +7,12 @@ of automation usage on social networks services.
 You can use application on your own risk and responsibility.
 
 ## Requirements:
-* Docker installed;
-* Java 1.8 (if you would like to change something);
+* Docker installed (Memory 6GiB, Swap 2GiB);
+* JDK 1.8;
 * Luck and :raised_hands: from the right place :monkey:
 
 ## Optional:
-* gmail account for tracking actions. [more info](#setup-and-configure-email-service)
+* gmail account for agent interactions via email commands. [more info](#setup-and-configure-email-service)
 * imagga account for image recognition possibilities. [IMAGGA Service](https://imagga.com/)
 
 # Steps to configure and execute
@@ -76,6 +76,7 @@ __*user.properties__
 |debug.mode|boolean|Will use local chrome driver instead of connecting to the grid if enabled. For debugging purposes.|
 |detect.media.content|boolean|To use or now Image Recognition service. Experimental feature.|
 |email.service|boolean|Use configured email service for interactions|
+|service.repeat|boolean|Shall service start over after completion|
 
 # Setup and configure email service
 Current implementation is able to use gmail as an smtp service. This possibility could be used for getting status of current execution, etc.
