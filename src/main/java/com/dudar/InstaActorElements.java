@@ -41,6 +41,10 @@ public class InstaActorElements {
         }
     }
 
+    public static SelenideElement getCompromisedAccountInfo(){
+        return getControlNoException("Account compromised", By.xpath("//*[contains(text(),'Your Account Was Compromised')]"));
+    }
+
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
