@@ -4,7 +4,7 @@ trap ctrl_c INT
 function ctrl_c() {
         echo "** Trapped CTRL-C"
         echo "shutting down Selenium Grid in docker"
-        docker-compose down
+        docker-compose -f docker-compose-gridonly.yaml --compatibility down
 }
 
 #Phase 1. copy resources from git (optional)
