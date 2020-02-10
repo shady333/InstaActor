@@ -139,9 +139,19 @@ public class Utilities {
         return emailProperties.getProperty("username.email");
     }
 
+    public static String getRegisteredEmailUserName(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("registration.email");
+    }
+
     public static String getEmailUserPassword(){
         getEmailPropertiesInstance();
         return emailProperties.getProperty("password.email");
+    }
+
+    public static String getRegisteredEmailUserPassword(){
+        getEmailPropertiesInstance();
+        return emailProperties.getProperty("registration.email.password");
     }
 
     public static String getActionsUserEmail(){

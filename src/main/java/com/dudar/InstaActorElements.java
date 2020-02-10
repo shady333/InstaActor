@@ -45,6 +45,10 @@ public class InstaActorElements {
         return getControlNoException("Account compromised", By.xpath("//*[contains(text(),'Your Account Was Compromised')]"));
     }
 
+    public static SelenideElement getUnusualLoginAttempt(){
+        return getControlNoException("Account compromised", By.xpath("//*[contains(text(),'We Detected An Unusual Login Attempt')]"));
+    }
+
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {

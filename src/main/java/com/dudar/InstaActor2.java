@@ -18,6 +18,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import javax.imageio.ImageIO;
+import javax.mail.MessagingException;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -233,6 +234,7 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void checkIfPopupShown() throws InstaActorStopExecutionException {
+        checkVerificationMessage();
         checkCompromizedInfo();
         waitTillPageLoadedAndSearchAvailable();
         ElementsCollection popupWindow = $$(By.xpath("//div[attribute::role='dialog']"));
@@ -241,6 +243,22 @@ public class InstaActor2 implements Runnable, Actor {
             System.out.println("!!!Popup detected - " + popupText);
             if(popupText.equalsIgnoreCase("Turn on Notifications")){
                 mouseMoveToElementAndClick($(By.xpath("//button[contains(text(), 'Not Now')]")));
+            }
+        }
+    }
+
+    private void checkVerificationMessage() throws InstaActorStopExecutionException {
+        if(InstaActorElements.getUnusualLoginAttempt()!=null){
+            $(By.xpath("//label[contains(text(), 'Email')]")).click();
+            $(By.xpath("//button[contains(text(), 'Send Security Code')]")).click();
+
+            String code = null;
+            try {
+                code = EmailService.getVerificationCode(new Date());
+                $(By.name("security_code")).setValue(code);
+                $(By.xpath("//button[contains(text(), 'Submit')]")).click();
+            } catch (MessagingException e) {
+                throw new InstaActorStopExecutionException("Require Verification");
             }
         }
     }
@@ -317,7 +335,9 @@ public class InstaActor2 implements Runnable, Actor {
             {
                 for(int i =1; i < imagePost.size(); i++){
                     logger.info(getName() + "Navigate to next image > " + i);
-                    mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).shouldBe(Condition.visible));
+                    if($$(By.cssSelector(".coreSpriteRightChevron")).size()==1){
+                        mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).waitUntil(Condition.visible, 5000));
+                    }
                 }
                 currentPostType = PostType.GALLERY;
                 return;
