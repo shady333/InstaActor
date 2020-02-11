@@ -571,7 +571,7 @@ public class InstaActor2 implements Runnable, Actor {
         while (running.get()) {
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
-            isStopped = false;
+            //isStopped = false;
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
@@ -686,6 +686,7 @@ public class InstaActor2 implements Runnable, Actor {
     public Actor start () {
         logger.info(getName() + "Starting...");
         isStopped = false;
+
         crashCounter = 0;
         if (t == null) {
             t = new Thread (this, name);
