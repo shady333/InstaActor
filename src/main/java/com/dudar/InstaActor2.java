@@ -315,9 +315,11 @@ public class InstaActor2 implements Runnable, Actor {
             }
             else
             {
-                for(int i =1; i < imagePost.size(); i++){
-                    logger.info(getName() + "Navigate to next image > " + i);
-                    mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).shouldBe(Condition.visible));
+                for(int i = 1; i < imagePost.size(); i++){
+                    if($$(By.cssSelector(".coreSpriteRightChevron")).size()>0) {
+                        logger.info(getName() + "Navigate to next image > " + i);
+                        mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).waitUntil(Condition.visible, 5000));
+                    }
                 }
                 currentPostType = PostType.GALLERY;
                 return;
@@ -569,7 +571,7 @@ public class InstaActor2 implements Runnable, Actor {
         while (running.get()) {
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
-            isStopped = false;
+            //isStopped = false;
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
@@ -582,7 +584,7 @@ public class InstaActor2 implements Runnable, Actor {
                         crashCounter = 0;
                         defectedTags = new ArrayList<>();
                         completedTags = new ArrayList<>();
-                        Thread.sleep(60000);
+                        Thread.sleep(360000);
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -684,6 +686,7 @@ public class InstaActor2 implements Runnable, Actor {
     public Actor start () {
         logger.info(getName() + "Starting...");
         isStopped = false;
+
         crashCounter = 0;
         if (t == null) {
             t = new Thread (this, name);
