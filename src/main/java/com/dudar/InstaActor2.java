@@ -248,18 +248,42 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void checkVerificationMessage() throws InstaActorStopExecutionException {
+        //TODO should be implemented
+        //email API find security way to get into the inbox
+        //webUI - gmail ddoesn't opened
         if(InstaActorElements.getUnusualLoginAttempt()!=null){
-            $(By.xpath("//label[contains(text(), 'Email')]")).click();
-            $(By.xpath("//button[contains(text(), 'Send Security Code')]")).click();
 
-            String code = null;
-            try {
-                code = EmailService.getVerificationCode(new Date());
-                $(By.name("security_code")).setValue(code);
-                $(By.xpath("//button[contains(text(), 'Submit')]")).click();
-            } catch (MessagingException e) {
-                throw new InstaActorStopExecutionException("Require Verification");
-            }
+            throw  new InstaActorStopExecutionException("Verification");
+
+//            $(By.xpath("//label[contains(text(), 'Email')]")).click();
+//            $(By.xpath("//button[contains(text(), 'Send Security Code')]")).click();
+//
+//            String code = null;
+//            executeAsyncJavaScript("window.open()");
+//
+//            ArrayList<String> tabs = new ArrayList<String> (driver.getWindowHandles());
+//            driver.switchTo().window(tabs.get(1));
+//            open("http://gmail.com");
+//
+//            tabs = new ArrayList<String> (driver.getWindowHandles());
+//            driver.switchTo().window(tabs.get(2));
+//            $(By.cssSelector("input[type=\"email\"]")).val(Utilities.getRegisteredEmailUserName());
+//            $(By.cssSelector("input[type=\"email\"]")).sendKeys(Keys.ENTER);
+//
+//            $(By.cssSelector("input[type=\"password\"]")).val(Utilities.getRegisteredEmailUserPassword());
+//            $(By.cssSelector("input[type=\"password\"]")).sendKeys(Keys.ENTER);
+//
+//            tabs = new ArrayList<String> (driver.getWindowHandles());
+//            driver.switchTo().window(tabs.get(0));
+//
+//            try {
+//                code = EmailService.getVerificationCode(new Date());
+//
+//            } catch (MessagingException e) {
+//                //TODO handle messagin exception if occured
+//            }
+//            $(By.name("security_code")).setValue(code);
+//            $(By.xpath("//button[contains(text(), 'Submit')]")).click();
         }
     }
 
