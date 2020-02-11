@@ -9,6 +9,8 @@ function ctrl_c() {
 
 #Phase 1. copy resources from git (optional)
 
+rm -rfv target
+
 #Phase 2. Start selenium grid
 echo "starting Selenium GRID in docker"
 docker-compose -f docker-compose-gridonly.yaml --compatibility up -d
