@@ -315,9 +315,11 @@ public class InstaActor2 implements Runnable, Actor {
             }
             else
             {
-                for(int i =1; i < imagePost.size(); i++){
-                    logger.info(getName() + "Navigate to next image > " + i);
-                    mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).shouldBe(Condition.visible));
+                for(int i = 1; i < imagePost.size(); i++){
+                    if($$(By.cssSelector(".coreSpriteRightChevron")).size()>0) {
+                        logger.info(getName() + "Navigate to next image > " + i);
+                        mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).waitUntil(Condition.visible, 5000));
+                    }
                 }
                 currentPostType = PostType.GALLERY;
                 return;
@@ -569,7 +571,7 @@ public class InstaActor2 implements Runnable, Actor {
         while (running.get()) {
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
-            isStopped = false;
+            //isStopped = false;
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
