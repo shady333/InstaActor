@@ -45,9 +45,14 @@ public class InstaActorElements {
         return getControlNoException("Account compromised", By.xpath("//*[contains(text(),'Your Account Was Compromised')]"));
     }
 
+    public static SelenideElement getActionBlockedDialog(){
+        return getControlNoException("ActionBlocked dialog", By.xpath("//div[attribute::role='dialog']//h3[contains(text(),\"Action Blocked\")]"));
+    }
+
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
+            logger.info("Located element - " + name);
             return collection.get(0).waitUntil(Condition.visible, 30000);
         }
         else {

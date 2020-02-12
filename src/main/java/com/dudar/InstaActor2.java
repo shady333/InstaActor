@@ -201,7 +201,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void authentificate() {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
-        sleep(getRandonTimeout());
+        sleep(getRandonViewTimeout());
         InstaActorElements.getUserLoginInput().val(userName).pressTab();
         InstaActorElements.getUserPasswordInput().val(userPass).pressEnter();
         sleep(3000);
@@ -232,7 +232,7 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private void checkIfPopupShown() throws InstaActorStopExecutionException {
+    private void interactWithTurnOnNotificationsDialog() throws InstaActorStopExecutionException {
         checkCompromizedInfo();
         waitTillPageLoadedAndSearchAvailable();
         ElementsCollection popupWindow = $$(By.xpath("//div[attribute::role='dialog']"));
@@ -251,7 +251,7 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private int getRandonTimeout(){
+    private int getRandonViewTimeout(){
         return ThreadLocalRandom.current().nextInt(viewMinDalay, viewMaxDelay + 1);
     }
 
@@ -260,11 +260,11 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void mouseMoveToElementAndClick(WebElement element){
-        sleep(getRandonTimeout());
+        sleep(getRandonViewTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
         element.click();
-        sleep(getRandonTimeout());
+        sleep(getRandonViewTimeout());
     }
 
     private boolean searchByTag(String searchTag) {
@@ -392,12 +392,12 @@ public class InstaActor2 implements Runnable, Actor {
             logger.warn(getName() + "!!!WARNING!!!");
             logger.warn(getName() + "Detected suspicious action detected by service");
             buttonReport.get(0).click();
-            sleep(getRandonTimeout());
+            sleep(getRandonViewTimeout());
             if(InstaActorElements.getPostLikeButton()!=null) {
                 System.out.println("Re Like current post");
                 if(likesEnabled)
                     mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-                sleep(getRandonTimeout());
+                sleep(getRandonViewTimeout());
             }
             System.out.println("Switching to next tag for likes");
             resetCurrentPostStatus();
@@ -470,7 +470,7 @@ public class InstaActor2 implements Runnable, Actor {
     private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
-        sleep(getRandonTimeout());
+        sleep(getRandonViewTimeout());
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
         mouseMoveToElementAndClick(firstPostToLike);
 
@@ -483,7 +483,7 @@ public class InstaActor2 implements Runnable, Actor {
             currentPostUrl = WebDriverRunner.url();
             InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
-                sleep(getRandonTimeout());
+                sleep(getRandonViewTimeout());
                 if(processedPosts.get(currentTag).contains(currentPostUrl)){
                     logger.info(getName() + "Post was already processed");
                     logger.info(getName() + "SKIP - " + currentPostUrl);
@@ -514,7 +514,7 @@ public class InstaActor2 implements Runnable, Actor {
 
             if (!moveToNextPostIfAvailable())
                 break;
-            sleep(getRandonTimeout());
+            sleep(getRandonViewTimeout());
         }
     }
 
@@ -575,18 +575,13 @@ public class InstaActor2 implements Runnable, Actor {
                 String message = getName() + " execution completed.</br>";
                 sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
-                    try {
-                        interrupted = false;
-                        isStopped = false;
-                        isCompleted = false;
-                        crashCounter = 0;
-                        defectedTags = new ArrayList<>();
-                        completedTags = new ArrayList<>();
-                        Thread.sleep(60000);
-
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    interrupted = false;
+                    isStopped = false;
+                    isCompleted = false;
+                    crashCounter = 0;
+                    defectedTags = new ArrayList<>();
+                    completedTags = new ArrayList<>();
+                    waitSomeTime(3600000);
                 }
                 else {
                     stopExecution();
@@ -603,12 +598,18 @@ public class InstaActor2 implements Runnable, Actor {
                     initDriver(debugMode);
                     isActive = true;
                     authentificate();
-                    checkIfPopupShown();
+                    interactWithTurnOnNotificationsDialog();
                     Collections.shuffle(allTags);
                     int tagsCollectionSize = allTags.size();
                     AtomicInteger tagCounter = new AtomicInteger(1);
+                    int reactionsCounter = 0;
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
+                        if(reactionsCounter == 3) {
+                            analyseAndActoToReactions();
+                            reactionsCounter = 0;
+                        }
+                        reactionsCounter++;
                         if (!completedTags.contains(searchTag)) {
                             completedTags.add(searchTag);
                             logger.info(getName() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
@@ -662,6 +663,30 @@ public class InstaActor2 implements Runnable, Actor {
                     clearSession();
                 }
             }
+        }
+    }
+
+    private void analyseAndActoToReactions() {
+        followAccounts();
+    }
+
+    private void followAccounts() {
+        open("https://www.instagram.com/accounts/activity/");
+        waitSomeTime(getRandonViewTimeout());
+        ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
+        int maxItems = (followButtons.size()>5)?5:followButtons.size();
+        for(int i=0; i<maxItems; i++){
+            waitSomeTime(getRandonViewTimeout());
+            logger.info(getName() + "follow account");
+            followButtons.get(i).click();
+            waitSomeTime(getRandonViewTimeout());
+            if(InstaActorElements.getActionBlockedDialog()!=null){
+                logger.info(getName() + "Action Blocked dialog");
+                $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
+                return;
+            }
+
+            waitSomeTime(getRandonViewTimeout());
         }
     }
 
