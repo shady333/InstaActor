@@ -21,4 +21,12 @@ public interface Actor {
     boolean isCompleted();
 
     boolean isStopped();
+
+    void enableLikeAction();
+
+    void disableLikeAction();
+
+    void enableCommentsAction();
+
+    void disableCommentsAction();
 }

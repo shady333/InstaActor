@@ -85,6 +85,18 @@ public class ActorsManager {
                 case STOP:
                     actorsMap.get(action.getKey()).stop();
                     break;
+                case ENABLELIKE:
+                    actorsMap.get(action.getKey()).enableLikeAction();
+                    break;
+                case DISABLELIKE:
+                    actorsMap.get(action.getKey()).disableLikeAction();
+                    break;
+                case ENABLECOMMENT:
+                    actorsMap.get(action.getKey()).enableCommentsAction();
+                    break;
+                case DISABLECOMMENT:
+                    actorsMap.get(action.getKey()).disableCommentsAction();
+                    break;
                 case STATUS:
                     if(action.getKey().equals("ALL"))
                     {

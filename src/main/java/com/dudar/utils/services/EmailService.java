@@ -11,9 +11,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.search.FlagTerm;
-import javax.activation.DataHandler;
 import javax.activation.DataSource;
-import javax.activation.FileDataSource;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Date;
@@ -169,7 +167,16 @@ public class EmailService {
                             resultAction = ActorActions.REBOOT;
                         } else if (actionName.equals("REGISTER")) {
                             resultAction = ActorActions.REGISTER;
+                        } else if (actionName.equals(ActorActions.ENABLELIKE.toString())) {
+                            resultAction = ActorActions.ENABLELIKE;
+                        } else if (actionName.equals(ActorActions.DISABLELIKE.toString())) {
+                            resultAction = ActorActions.DISABLELIKE;
+                        } else if (actionName.equals(ActorActions.ENABLECOMMENT.toString())) {
+                            resultAction = ActorActions.ENABLECOMMENT;
+                        } else if (actionName.equals(ActorActions.DISABLECOMMENT.toString())) {
+                            resultAction = ActorActions.DISABLECOMMENT;
                         }
+
 
                     }
                 }
