@@ -84,6 +84,8 @@ public class InstaActor2 implements Runnable, Actor {
     private boolean interrupted = false;
     private boolean emailServiceEnabled = false;
 
+    private int sleepDurationBetweenRunsInHours = 2;
+
     private int totalComments = 0;
 
     private boolean repeatActionsAfterComplete = false;
@@ -114,10 +116,10 @@ public class InstaActor2 implements Runnable, Actor {
             userName = actorProperties.getProperty("acc.user");
         if(!StringUtils.isEmpty(actorProperties.getProperty("acc.password")))
             userPass = actorProperties.getProperty("acc.password");
-//        if(!StringUtils.isEmpty(actorProperties.getProperty("likes.enabled")))
-//            likesEnabled = Boolean.parseBoolean(actorProperties.getProperty("likes.enabled"));
-//        if(!StringUtils.isEmpty(actorProperties.getProperty("comments.enabled")))
-//            commentsEnabled = Boolean.parseBoolean(actorProperties.getProperty("comments.enabled"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("likes.enabled")))
+            likesEnabled = Boolean.parseBoolean(actorProperties.getProperty("likes.enabled"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("comments.enabled")))
+            commentsEnabled = Boolean.parseBoolean(actorProperties.getProperty("comments.enabled"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("debug.mode")))
             debugMode = Boolean.parseBoolean(actorProperties.getProperty("debug.mode"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("detect.media.content")))
@@ -126,6 +128,8 @@ public class InstaActor2 implements Runnable, Actor {
             emailServiceEnabled = Boolean.parseBoolean(actorProperties.getProperty("email.service"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("service.repeat")))
             repeatActionsAfterComplete = Boolean.parseBoolean(actorProperties.getProperty("service.repeat"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("sleep.duration")))
+            sleepDurationBetweenRunsInHours = Integer.parseInt(actorProperties.getProperty("sleep.duration"));
     }
 
     private void sendEmailMessage(String message){
@@ -359,10 +363,12 @@ public class InstaActor2 implements Runnable, Actor {
         if(InstaActorElements.getPostLikeButton() != null){
             logger.info(getName() + "Like post");
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-            currentPostLikeAdded = true;
-            logger.info(getName() + "Like added");
-            totalLiked++;
-            likedPosts.add(currentPostUrl);
+            if(!suspectedActionsDetectorOnLike()){
+                currentPostLikeAdded = true;
+                logger.info(getName() + "Like added");
+                totalLiked++;
+                likedPosts.add(currentPostUrl);
+            }
         }
     }
 
@@ -393,6 +399,8 @@ public class InstaActor2 implements Runnable, Actor {
         this.commentsEnabled = false;
     }
 
+
+
     private boolean suspectedActionsDetectorOnLike() {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
@@ -403,7 +411,8 @@ public class InstaActor2 implements Runnable, Actor {
 //                System.out.println("Completed tags:");
 //                completedTags.forEach(System.out::println);
 //                System.out.println("!!!STOP EXECUTION");
-                sendEmailMessage(getName() + "Unexpected behavior - ADD LIKE for:<br/>"
+                sendEmailMessage(getName() + "Like action was blocked by Instagram service<br/>"
+                        + "<b>LIKE option will be disabled for current instance: " + getName() + "<br/>"
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
 
@@ -444,13 +453,14 @@ public class InstaActor2 implements Runnable, Actor {
                 System.out.println("Completed tags:");
                 completedTags.forEach(System.out::println);
                 System.out.println("!!!STOP EXECUTION");
-                sendEmailMessage(getName() + "Unexpected behavior - ADD COMMENT for:<br/>"
+                sendEmailMessage(getName() + "Comment action was blocked by Instagram service<br/>"
+                        + "<b>COMMENT option will be disabled for current instance: " + getName() + "<br/>"
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
 
                 buttonReport.get(0).click();
 //                stopExecution();
-            commentsEnabled = false;
+                commentsEnabled = false;
                 resetCurrentPostStatus();
 //                interrupted = true;
                 return true;
@@ -521,9 +531,11 @@ public class InstaActor2 implements Runnable, Actor {
 //                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-                logger.info(getName() + "Comment added: " + commentText);
-                totalComments++;
-                addedComment = commentText;
+                if(!suspectedActionsDetectorOnComment()) {
+                    logger.info(getName() + "Comment added: " + commentText);
+                    totalComments++;
+                    addedComment = commentText;
+                }
             } catch (Error err) {
                 logger.error(getName() + "ERROR on commenting" + err.getLocalizedMessage());
             }
@@ -557,19 +569,15 @@ public class InstaActor2 implements Runnable, Actor {
                 }
                 detectPostTypeAndAct();
                 if(shouldLikePost()){
-
                     if(!likedPosts.contains(currentPostUrl))
                     {
                         if(likesEnabled) {
                             addLikeToPost();
-                            suspectedActionsDetectorOnLike();
                         }
                     }
-
                     if(!commentedPosts.contains(currentPostUrl)) {
                         if (commentsEnabled) {
                             addCommentToPost();
-                            suspectedActionsDetectorOnComment();
                         }
                     }
                 }
@@ -638,13 +646,13 @@ public class InstaActor2 implements Runnable, Actor {
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
             //isStopped = false;
-            likesEnabled = true;
-            commentsEnabled = true;
-            commentedPosts.addAll(readListFromFile("data/results/"+name+"_commentedPosts.csv"));
+//            likesEnabled = true;
+//            commentsEnabled = true;
+            commentedPosts.addAll(Utilities.getAllTags("data/results/"+name+"_commentedPosts.csv"));
             commentedPosts = commentedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
-            likedPosts.addAll(readListFromFile("data/results/"+name+"_likedPosts.csv"));
+            likedPosts.addAll(Utilities.getAllTags("data/results/"+name+"_likedPosts.csv"));
             likedPosts = likedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
@@ -659,8 +667,7 @@ public class InstaActor2 implements Runnable, Actor {
                     crashCounter = 0;
 //                    defectedTags = new ArrayList<>();
                     completedTags = new ArrayList<>();
-                    waitSomeTime(3600000);
-//                    waitSomeTime(60000);
+                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
                 }
                 else {
                     stopExecution();
@@ -749,35 +756,57 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void writeListToFile(List listName, String fileName){
+
         try {
-            FileOutputStream fos = new FileOutputStream(fileName);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(listName);
-            oos.close();
-        }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
+            FileWriter writer = new FileWriter(fileName);
+            for(Object str : listName){
+                writer.write((String)str + ",");
+            }
+            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+//        try {
+//            FileOutputStream fos = new FileOutputStream(fileName);
+//            ObjectOutputStream oos = new ObjectOutputStream(fos);
+//            oos.writeObject(listName);
+//            oos.close();
+//        }
+//        catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
-    private List readListFromFile(String fileName){
-        try {
-            FileInputStream fis = new FileInputStream(fileName);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            List<String> clubs = (List<String>) ois.readObject();
-            ois.close();
-            return clubs;
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return new ArrayList();
-    }
+//    private List readListFromFile(String fileName){
+//
+//
+//
+//        try {
+//            FileReader reader = new FileReader(fileName);
+//            reader.read()
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//
+//
+//        try {
+//            FileInputStream fis = new FileInputStream(fileName);
+//            ObjectInputStream ois = new ObjectInputStream(fis);
+//            List<String> clubs = (List<String>) ois.readObject();
+//            ois.close();
+//            return clubs;
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        return new ArrayList();
+//    }
 
     private void analyseAndActoToReactions() {
         followAccounts();
