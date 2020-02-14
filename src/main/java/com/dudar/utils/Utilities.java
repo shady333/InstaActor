@@ -69,17 +69,20 @@ public class Utilities {
 
     //TODO Combine into one List all values from CSV file, if it has more than 1 row
     public static List<String> getAllTags(String filePath){
-        List<List<String>> records = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
-            String[] values;
-            while ((values = csvReader.readNext()) != null) {
-                records.add(Arrays.asList(values));
+        if(new File(filePath).isFile()){
+            List<List<String>> records = new ArrayList<>();
+            try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
+                String[] values;
+                while ((values = csvReader.readNext()) != null) {
+                    records.add(Arrays.asList(values));
+                }
+                if(records.size()>0)
+                    return records.get(0);
+            } catch (IOException | CsvValidationException e) {
+                e.printStackTrace();
             }
-            return records.get(0);
-        } catch (IOException | CsvValidationException e) {
-            e.printStackTrace();
         }
-        return null;
+        return new ArrayList<>();
     }
 
     public static String getCurrentTimestamp(){
