@@ -10,6 +10,7 @@ import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -281,7 +282,13 @@ public class InstaActor2 implements Runnable, Actor {
         searchBox.val("#"+searchTag);
         sleep(3000);
         $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
-        searchBox.sendKeys(Keys.DOWN, Keys.ENTER);
+
+        if($$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).size()>0){
+            $$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).get(0).click();
+        }
+
+
+        //searchBox.sendKeys(Keys.DOWN, Keys.ENTER);
         sleep(5000);
         $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
         SelenideElement tagLocator = $(By.cssSelector("main h1")).shouldBe(Condition.exist);
@@ -648,11 +655,11 @@ public class InstaActor2 implements Runnable, Actor {
             //isStopped = false;
 //            likesEnabled = true;
 //            commentsEnabled = true;
-            commentedPosts.addAll(Utilities.getAllTags("data/results/"+name+"_commentedPosts.csv"));
+            commentedPosts.addAll(Utilities.getAllTags(getCommentedPostsFilePath()));
             commentedPosts = commentedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
-            likedPosts.addAll(Utilities.getAllTags("data/results/"+name+"_likedPosts.csv"));
+            likedPosts.addAll(Utilities.getAllTags(getLikedPostsFilePath()));
             likedPosts = likedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
@@ -692,7 +699,7 @@ public class InstaActor2 implements Runnable, Actor {
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
                         if(reactionsCounter == 3) {
-                            analyseAndActoToReactions();
+                            analyseAndActToReactions();
                             reactionsCounter = 0;
                         }
                         reactionsCounter++;
@@ -749,10 +756,25 @@ public class InstaActor2 implements Runnable, Actor {
                     clearSession();
                 }
             }
-            writeListToFile(defectedTags, "data/results/"+name+"_defectedTags.csv");
-            writeListToFile(likedPosts, "data/results/"+name+"_likedPosts.csv");
-            writeListToFile(commentedPosts, "data/results"+name+"commentedPosts.csv");
+            writeListToFile(defectedTags, getDefectedTagsFilePath());
+            writeListToFile(likedPosts, getLikedPostsFilePath());
+            writeListToFile(commentedPosts, getCommentedPostsFilePath());
         }
+    }
+
+    @NotNull
+    private String getDefectedTagsFilePath() {
+        return "data/results/"+name+"_defectedTags.csv";
+    }
+
+    @NotNull
+    private String getLikedPostsFilePath() {
+        return "data/results/"+name+"_likedPosts.csv";
+    }
+
+    @NotNull
+    private String getCommentedPostsFilePath() {
+        return "data/results/"+name+"_commentedPosts.csv";
     }
 
     private void writeListToFile(List listName, String fileName){
@@ -808,7 +830,7 @@ public class InstaActor2 implements Runnable, Actor {
 //        return new ArrayList();
 //    }
 
-    private void analyseAndActoToReactions() {
+    private void analyseAndActToReactions() {
         followAccounts();
     }
 
