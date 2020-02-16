@@ -84,6 +84,7 @@ public class InstaActor2 implements Runnable, Actor {
     private String currentStatus = "";
     private boolean interrupted = false;
     private boolean emailServiceEnabled = false;
+    private Properties actorProperties;
 
     private int sleepDurationBetweenRunsInHours = 2;
 
@@ -91,14 +92,15 @@ public class InstaActor2 implements Runnable, Actor {
 
     private boolean repeatActionsAfterComplete = false;
 
-    public InstaActor2(String name, Properties actorProperties, List<String> tags){
+    public InstaActor2(String name, Properties properties, List<String> tags){
         this.name = name;
         creationDate = new Date();
         allTags = tags;
-        setupProperties(actorProperties);
+        actorProperties = properties;
+        initValuesFromProperties();
     }
 
-    private void setupProperties(Properties actorProperties) {
+    private void initValuesFromProperties() {
         if(!StringUtils.isEmpty(actorProperties.getProperty("view.min.delay")))
             viewMinDalay = Integer.parseInt(actorProperties.getProperty("view.min.delay"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("view.max.delay")))
@@ -489,7 +491,7 @@ public class InstaActor2 implements Runnable, Actor {
         return false;
     }
 
-    private boolean commentPost(){
+    private boolean shouldCommentPost(){
         int min = 1;
         int max = 100;
         boolean result = false;
@@ -500,42 +502,36 @@ public class InstaActor2 implements Runnable, Actor {
         return result;
     }
 
-    private String getComment(){
-        if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
-            int maxVal = InstaActorComments.comments.size();
-            int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
-            return InstaActorComments.comments.get(commentIndex);
-        }
-        else{
-            if(this.currentPostType == PostType.VIDEO){
-                logger.info(getName() + "Return Video comment");
-                return InstaActorComments.commentsVideo.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.commentsVideo.size()));
-            }
-            logger.info(getName() + "Return Other Content comment");
-            return
-                    InstaActorComments.comment1.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment1.size()))
-                            .concat(
-                                    InstaActorComments.comment2.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment2.size()))
-                            ).concat(
-                            InstaActorComments.comment3.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment3.size()))
-                    );
-        }
-    }
+//    private String getComment(){
+//        if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
+//            int maxVal = InstaActorComments.comments.size();
+//            int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
+//            return InstaActorComments.comments.get(commentIndex);
+//        }
+//        else{
+//            if(this.currentPostType == PostType.VIDEO){
+//                logger.info(getName() + "Return Video comment");
+//                return InstaActorComments.commentsVideo.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.commentsVideo.size()));
+//            }
+//            logger.info(getName() + "Return Other Content comment");
+//            return
+//                    InstaActorComments.comment1.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment1.size()))
+//                            .concat(
+//                                    InstaActorComments.comment2.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment2.size()))
+//                            ).concat(
+//                            InstaActorComments.comment3.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment3.size()))
+//                    );
+//        }
+//    }
 
     private void addCommentToPost(){
         //TODO Post comment according to image type
-        if(commentPost())
-        {
+//        if(shouldCommentPost())
+//        {
             try {
-                String commentText = getComment();
+                String commentText = InstaActorComments.generateComment(currentPostType);
                 logger.debug(getName() + "Trying to add comment: " + commentText);
                 $(By.cssSelector("article textarea")).val(commentText);
-
-                //TODO add emojji support
-                //Commented part for posting emojji, not working yet
-//                String JS_ADD_TEXT_TO_INPUT = "var elm = arguments[0], txt = arguments[1]; elm.value += txt; elm.dispatchEvent(new Event('change'));";
-//                WebElement textBox = $(By.cssSelector("article textarea"));
-//                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
 
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
                 if(!suspectedActionsDetectorOnComment()) {
@@ -546,10 +542,10 @@ public class InstaActor2 implements Runnable, Actor {
             } catch (Error err) {
                 logger.error(getName() + "ERROR on commenting" + err.getLocalizedMessage());
             }
-        }
-        else{
-            logger.info(getName() + "Skip comment");
-        }
+//        }
+//        else{
+//            logger.info(getName() + "Skip comment");
+//        }
     }
 
     private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
@@ -575,17 +571,18 @@ public class InstaActor2 implements Runnable, Actor {
                     continue;
                 }
                 detectPostTypeAndAct();
-                if(shouldLikePost()){
-                    if(!likedPosts.contains(currentPostUrl))
-                    {
-                        if(likesEnabled) {
-                            addLikeToPost();
-                        }
+                if(shouldLikePost()) {
+                    if (!likedPosts.contains(currentPostUrl)) {
+                        //if(likesEnabled) {
+                        addLikeToPost();
+                        //}
                     }
+                }
+                if(shouldCommentPost()){
                     if(!commentedPosts.contains(currentPostUrl)) {
-                        if (commentsEnabled) {
+//                        if (commentsEnabled) {
                             addCommentToPost();
-                        }
+//                        }
                     }
                 }
             }
@@ -663,13 +660,14 @@ public class InstaActor2 implements Runnable, Actor {
             likedPosts = likedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
+            initValuesFromProperties();
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
                 sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
                     interrupted = false;
-                    isStopped = false;
+//                    isStopped = false;
                     isCompleted = false;
                     crashCounter = 0;
 //                    defectedTags = new ArrayList<>();
