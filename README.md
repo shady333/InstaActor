@@ -71,8 +71,6 @@ __*user.properties__
 |posts.count|int|How many posts will proceed for each tag|
 |acc.user|String|Instagram user login (REQUIRED)|
 |acc.password|String|Instagram user password (REQUIRED)|
-|likes.enabled|boolean|Should actor like posts (enabled by default)|
-|comments.enabled|boolean|Should actor add comment to the posts (enabled by default)|
 |debug.mode|boolean|Will use local chrome driver instead of connecting to the grid if enabled. For debugging purposes.|
 |detect.media.content|boolean|To use or now Image Recognition service. Experimental feature.|
 |email.service|boolean|Use configured email service for interactions|
@@ -105,7 +103,7 @@ Subject: __ACTION_NAME ACTOR_NAME__
 |:---|:---|
 |ACTION_START ACTOR_"__name__"|Start service with provided __name__|
 |ACTION_STOP  ACTOR_"__name__"|Stop service with __name__|
-|ACTION_ENABLELIKE  ACTOR_"__name__"|Enable Like actions for service with __name__|
+|ACTION_ENABLELIKE  ACTOR_"__name__"|Enable Like actions for service with __name__.|
 |ACTION_DISABLELIKE  ACTOR_"__name__"|Disable Like actions for service with __name__|
 |ACTION_ENABLECOMMENT  ACTOR_"__name__"|Enable Comment actions for service with __name__|
 |ACTION_DISABLECOMMENT  ACTOR_"__name__"|Disable Comment actions for service with __name__|
