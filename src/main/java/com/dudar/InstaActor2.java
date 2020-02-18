@@ -595,7 +595,6 @@ public class InstaActor2 implements Runnable, Actor {
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
-//                sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
                     interrupted = false;
                     isCompleted = false;
@@ -603,8 +602,7 @@ public class InstaActor2 implements Runnable, Actor {
                     completedTags = new ArrayList<>();
                     sleepMode = true;
                     endTime = LocalDateTime.now();
-//                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
-                    waitSomeTime(60000);
+                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
                     sleepMode = false;
                     startTime = LocalDateTime.now();
                 }
