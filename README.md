@@ -75,7 +75,7 @@ __*user.properties__
 |detect.media.content|boolean|To use or now Image Recognition service. Experimental feature.|
 |email.service|boolean|Use configured email service for interactions|
 |service.repeat|boolean|Shall service start over after completion|
-|sleep.duration|int|Value in hours to wait before starting new run after completion (1 hour by default)|
+|sleep.duration|int|Value in hours to wait before starting new run after completion (2 hour by default)|
 
 # Setup and configure email service
 Current implementation is able to use gmail as an smtp service. This possibility could be used for getting status of current execution, etc.

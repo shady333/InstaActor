@@ -23,6 +23,9 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,6 +57,7 @@ public class InstaActor2 implements Runnable, Actor {
     private String name;
     private Thread t = null;
     private Date creationDate;
+    private boolean sleepMode = false;
 
     final static Logger logger = Logger.getLogger(InstaActor2.class);
     private int viewMinDalay;
@@ -167,6 +171,11 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     @Override
+    public boolean isActive(){
+        return !sleepMode;
+    }
+
+    @Override
     public Thread.State getState(){
         return t.getState();
     }
@@ -231,10 +240,16 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void waitSomeTime(int duration){
-        try {
-            Thread.sleep(duration);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        long currentPoint = System.currentTimeMillis();
+
+        while(System.currentTimeMillis() < (currentPoint + duration)){
+            logger.debug(getName() + "Sleep duration - " + duration/1000 + " seconds.\n"
+                + ((currentPoint + duration) - System.currentTimeMillis())/1000 + " seconds left.");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -274,11 +289,11 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private boolean searchByTag(String searchTag) {
-        sleep(1000);
+//        sleep(1000);
         SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
         mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
         searchBox.val("#"+searchTag);
-        sleep(3000);
+//        sleep(3000);
         $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
 
         if($$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).size()>0){
@@ -462,6 +477,7 @@ public class InstaActor2 implements Runnable, Actor {
                 totalComments++;
                 addedComment = commentText;
             }
+            commentedPosts.add(currentPostUrl);
         } catch (Error err) {
             logger.error(getName() + "ERROR on commenting" + err.getLocalizedMessage());
         }
@@ -480,12 +496,13 @@ public class InstaActor2 implements Runnable, Actor {
             currentPostUrl = WebDriverRunner.url();
             InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
-                sleep(getRandomViewTimeout());
+
                 if(processedPosts.get(currentTag).contains(currentPostUrl)){
                     logger.info(getName() + "Post was already processed");
                     logger.info(getName() + "SKIP - " + currentPostUrl);
                     continue;
                 }
+                sleep(getRandomViewTimeout());
                 detectPostTypeAndAct();
                 if(shouldLikePost()) {
                     if (!likedPosts.contains(currentPostUrl)) {
@@ -505,7 +522,7 @@ public class InstaActor2 implements Runnable, Actor {
             resetCurrentPostStatus();
             if (!moveToNextPostIfAvailable())
                 break;
-            sleep(getRandomViewTimeout());
+//            sleep(getRandomViewTimeout());
         }
     }
 
@@ -521,6 +538,8 @@ public class InstaActor2 implements Runnable, Actor {
         }
         return true;
     }
+
+    private boolean isOnPause = false;
 
     private String getCurrentStatusString(int currentPostPosition) {
         currentStatus += "\n/***************InstaActor " + name + " POST INFO*****************/\n";
@@ -543,6 +562,7 @@ public class InstaActor2 implements Runnable, Actor {
     public String viewCurrentParameters(){
         String currentStatus = "*****InstaActor Parameters*****\n"
                 + "Name - " + name + "\n"
+                + "Active - " + isActive() + "\n"
                 + "Like percentage - " + likesPercentage + "\n"
                 + "Comment percentage - " + commentsPercentage +"\n"
                 + "View parameters: " + viewMinDalay + " " + viewMaxDelay + "\n"
@@ -550,6 +570,11 @@ public class InstaActor2 implements Runnable, Actor {
                 + "*****InstaActor Parameters*****";
         logger.info(currentStatus);
         return currentStatus;
+    }
+
+    private boolean isSleeping(){
+
+        return false;
     }
 
     @Override
@@ -570,13 +595,18 @@ public class InstaActor2 implements Runnable, Actor {
             if (isCompleted) {
                 logger.info("All tags were processed");
                 String message = getName() + " execution completed.</br>";
-                sendEmailMessage(message + generateStatusForEmail());
+//                sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
                     interrupted = false;
                     isCompleted = false;
                     crashCounter = 0;
                     completedTags = new ArrayList<>();
-                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
+                    sleepMode = true;
+                    endTime = LocalDateTime.now();
+//                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
+                    waitSomeTime(60000);
+                    sleepMode = false;
+                    startTime = LocalDateTime.now();
                 }
                 else {
                     stopExecution();
@@ -700,13 +730,20 @@ public class InstaActor2 implements Runnable, Actor {
         int maxItems = (followButtons.size()>5)?5:followButtons.size();
         for(int i=0; i<maxItems; i++){
             waitSomeTime(getRandomViewTimeout());
-            logger.info(getName() + "follow account");
-            followButtons.get(i).click();
-            waitSomeTime(getRandomViewTimeout());
-            if(InstaActorElements.getActionBlockedDialog()!=null){
-                logger.info(getName() + "Action Blocked dialog");
-                $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
-                return;
+            if(followButtons.get(0).is(Condition.visible)){
+                logger.info(getName() + "follow account");
+                try{
+                    followButtons.get(0).click();
+                }
+                catch(AssertionError err){
+                    executeJavaScript("arguments[0].click()", followButtons.get(0));
+                }
+                waitSomeTime(getRandomViewTimeout());
+                if(InstaActorElements.getActionBlockedDialog()!=null){
+                    logger.info(getName() + "Action Blocked dialog");
+                    $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
+                    return;
+                }
             }
             waitSomeTime(getRandomViewTimeout());
         }
@@ -728,12 +765,16 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
     public Actor start () {
         logger.info(getName() + "Starting...");
         isStopped = false;
         crashCounter = 0;
         if (t == null) {
             t = new Thread (this, name);
+            startTime = LocalDateTime.now();
             t.start ();
         } else if (t.getState() == Thread.State.TERMINATED) {
             logger.info("Starting not active thread");
@@ -748,13 +789,20 @@ public class InstaActor2 implements Runnable, Actor {
         logger.info(getName() + "STOP");
         clearSession();
         stopExecution();
+        endTime = LocalDateTime.now();
         return this;
     }
 
     private String generateStatusForEmail(){
+
+        long duration = ChronoUnit.MINUTES.between(startTime, LocalDateTime.now());
+
+
         String status = "<h1>InstaActor STATUS</h1>"
                 +"<p>Service name: " + name
                 +"<p>Service is running: " + isAlive()
+                +"<p>Started: " + creationDate
+                +"<p>Current(latest) duration (minutes): " + duration
                 +"<p>Was interrupted: " + interrupted
                 +"<p>Like percentage: " + likesPercentage + "%"
                 +"<p>Comments percentage: " + commentsPercentage + "%"

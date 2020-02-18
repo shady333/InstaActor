@@ -12,6 +12,8 @@ public interface Actor {
 
     boolean isAlive();
 
+    boolean isActive();
+
     boolean isInterrupted();
 
     Thread.State getState();

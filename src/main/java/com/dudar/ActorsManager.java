@@ -37,6 +37,7 @@ public class ActorsManager {
     public void trackActiveServices(){
         for(Actor value: actorsMap.values()){
             logger.debug(value.getName() + "isAlive - "+value.isAlive());
+            logger.debug(value.getName() + "isActive - "+value.isActive());
             logger.debug(value.getName() + "isInterrupted - "+value.isInterrupted());
             logger.debug(value.getName() + "State - "+value.getState());
 
