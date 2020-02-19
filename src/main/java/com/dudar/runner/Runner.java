@@ -1,7 +1,6 @@
 package com.dudar.runner;
 
 import com.dudar.ActorsManager;
-import com.dudar.InstaActor2;
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.ActorActions;
 import com.dudar.utils.services.EmailService;
@@ -17,7 +16,7 @@ public class Runner {
 
     final static Logger logger = Logger.getLogger(Runner.class);
 
-    public static void main(String[] args) throws InterruptedException, MessagingException {
+    public static void main(String[] args) throws InterruptedException {
 
         logger.info("Starting...");
         Date lastActionDate = new Date();
@@ -31,21 +30,28 @@ public class Runner {
         EmailService.generateAndSendEmail("InstaActor service is UP and running");
         while(true)
         {
-            ActorsManager.getInstance().trackActiveServices();
+            try {
+                ActorsManager.getInstance().trackActiveServices();
 
-            currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
-            if(currentAction.getValue() == ActorActions.ABORT){
-                EmailService.generateAndSendEmail("<h1>!!!STOP FOR EXECUTION!!!");
-                logger.info("END");
-                System.exit(0);
+                currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
+                if (currentAction.getValue() == ActorActions.ABORT) {
+                    EmailService.generateAndSendEmail("<h1>!!!STOP FOR EXECUTION!!!");
+                    logger.info("END");
+                    System.exit(0);
+                }
+                if ((currentAction.getValue() != ActorActions.UNDEFINED)
+                        & !StringUtils.isEmpty(currentAction.getKey())) {
+                    logger.info(currentAction.getKey() + " --- " + currentAction.getValue());
+                    ActorsManager.getInstance().proceedAction(currentAction);
+                    lastActionDate = new Date();
+                }
             }
-            if((currentAction.getValue() != ActorActions.UNDEFINED)
-                    & !StringUtils.isEmpty(currentAction.getKey())){
-                logger.info(currentAction.getKey() + " --- " + currentAction.getValue());
-                ActorsManager.getInstance().proceedAction(currentAction);
-                lastActionDate = new Date();
+            catch (Exception ex){
+                logger.error("Exception in Runner - " + ex.getMessage());
             }
-            TimeUnit.SECONDS.sleep(30);
+            finally {
+                TimeUnit.SECONDS.sleep(30);
+            }
         }
     }
 }

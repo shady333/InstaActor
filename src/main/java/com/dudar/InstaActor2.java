@@ -23,7 +23,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -289,11 +288,9 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private boolean searchByTag(String searchTag) {
-//        sleep(1000);
         SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
         mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
         searchBox.val("#"+searchTag);
-//        sleep(3000);
         $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
 
         if($$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).size()>0){
@@ -522,7 +519,6 @@ public class InstaActor2 implements Runnable, Actor {
             resetCurrentPostStatus();
             if (!moveToNextPostIfAvailable())
                 break;
-//            sleep(getRandomViewTimeout());
         }
     }
 
@@ -538,8 +534,6 @@ public class InstaActor2 implements Runnable, Actor {
         }
         return true;
     }
-
-    private boolean isOnPause = false;
 
     private String getCurrentStatusString(int currentPostPosition) {
         currentStatus += "\n/***************InstaActor " + name + " POST INFO*****************/\n";
@@ -572,11 +566,6 @@ public class InstaActor2 implements Runnable, Actor {
         return currentStatus;
     }
 
-    private boolean isSleeping(){
-
-        return false;
-    }
-
     @Override
     public void run() {
         running.set(true);
@@ -601,10 +590,10 @@ public class InstaActor2 implements Runnable, Actor {
                     crashCounter = 0;
                     completedTags = new ArrayList<>();
                     sleepMode = true;
-                    endTime = LocalDateTime.now();
                     waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
                     sleepMode = false;
                     startTime = LocalDateTime.now();
+                    endTime = null;
                 }
                 else {
                     stopExecution();
@@ -686,6 +675,7 @@ public class InstaActor2 implements Runnable, Actor {
             writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
+            endTime = LocalDateTime.now();
         }
     }
 
@@ -770,6 +760,8 @@ public class InstaActor2 implements Runnable, Actor {
         logger.info(getName() + "Starting...");
         isStopped = false;
         crashCounter = 0;
+        startTime = LocalDateTime.now();
+        endTime = null;
         if (t == null) {
             t = new Thread (this, name);
             startTime = LocalDateTime.now();
@@ -785,22 +777,23 @@ public class InstaActor2 implements Runnable, Actor {
     @Override
     public Actor stop() {
         logger.info(getName() + "STOP");
+        endTime = LocalDateTime.now();
         clearSession();
         stopExecution();
         endTime = LocalDateTime.now();
         return this;
     }
 
+    private long getExecutionDuration(){
+        return ChronoUnit.MINUTES.between(startTime, (endTime == null) ? LocalDateTime.now() : endTime);
+    }
+
     private String generateStatusForEmail(){
-
-        long duration = ChronoUnit.MINUTES.between(startTime, LocalDateTime.now());
-
-
         String status = "<h1>InstaActor STATUS</h1>"
                 +"<p>Service name: " + name
-                +"<p>Service is running: " + isAlive()
+                +"<p>Service is running: " + isActive()
                 +"<p>Started: " + creationDate
-                +"<p>Current(latest) duration (minutes): " + duration
+                +"<p>Current(latest) duration (minutes): " + getExecutionDuration()
                 +"<p>Was interrupted: " + interrupted
                 +"<p>Like percentage: " + likesPercentage + "%"
                 +"<p>Comments percentage: " + commentsPercentage + "%"

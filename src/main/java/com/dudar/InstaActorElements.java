@@ -52,7 +52,6 @@ public class InstaActorElements {
     private static SelenideElement getControlNoException(String name, By by){
         ElementsCollection collection = $$(by);
         if(collection.size() > 0) {
-            logger.info("Located element - " + name);
             return collection.get(0).waitUntil(Condition.visible, 30000);
         }
         else {
