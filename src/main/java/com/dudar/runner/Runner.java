@@ -24,14 +24,17 @@ public class Runner {
         if(args.length > 0){
             if(args[0].equals("-Doption=START")){
                 ActorsManager.getInstance().initActorsFromDataFolder();
+                TimeUnit.SECONDS.sleep(5);
                 ActorsManager.getInstance().startAllRegistered();
             }
         }
         EmailService.generateAndSendEmail("InstaActor service is UP and running");
         while(true)
         {
+            logger.debug("MAIN THREAD tick");
             try {
                 ActorsManager.getInstance().trackActiveServices();
+                ActorsManager.getInstance().startTerminatedInstances();
 
                 currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
                 if (currentAction.getValue() == ActorActions.ABORT) {
@@ -50,7 +53,7 @@ public class Runner {
                 logger.error("Exception in Runner - " + ex.getMessage());
             }
             finally {
-                TimeUnit.SECONDS.sleep(30);
+                TimeUnit.SECONDS.sleep(60);
             }
         }
     }

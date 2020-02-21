@@ -2,7 +2,7 @@ package com.dudar;
 
 public interface Actor {
 
-    String getName();
+    String getNameForLog();
 
     Actor start();
 

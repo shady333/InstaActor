@@ -8,6 +8,7 @@ public enum ActorActions {
     REGISTER,
     UNDEFINED,
     REBOOT,
+    REMOVE,
     ENABLELIKE,
     DISABLELIKE,
     ENABLECOMMENT,
