@@ -311,11 +311,13 @@ public class InstaActor2 implements Runnable, Actor {
             $$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).get(0).click();
         }
         sleep(5000);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
-        SelenideElement tagLocator = $(By.cssSelector("main h1")).shouldBe(Condition.exist);
-
-        logger.info(getNameForLog()  + "Current page Tag - "+tagLocator.getText());
-        if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
+        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).waitUntil(Condition.visible, 10000);
+        SelenideElement tagLocator = null;
+        if($$(By.cssSelector("main h1")).size() > 0){
+            tagLocator = $$(By.cssSelector("main h1")).get(0);
+        }
+        if(tagLocator != null && tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
+            logger.info(getNameForLog()  + "Current page Tag - "+tagLocator.getText());
             currentTag = searchTag;
             return true;
         }
