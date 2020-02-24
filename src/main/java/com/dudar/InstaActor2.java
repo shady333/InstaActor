@@ -830,6 +830,7 @@ public class InstaActor2 implements Runnable, Actor {
                 +"<p>Service name: " + name
                 +"<p>Service is running: " + isActive()
                 +"<p>Started: " + creationDate
+                +"<p>Current run start time: " + startTime
                 +"<p>Current(latest) duration (minutes): " + getExecutionDuration()
                 +"<p>Was interrupted: " + interrupted
                 +"<p>Like percentage: " + likesPercentage + "%"
