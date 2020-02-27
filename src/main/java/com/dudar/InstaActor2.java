@@ -213,8 +213,8 @@ public class InstaActor2 implements Runnable, Actor {
                 chromeOptions.addArguments("--enable-automation");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
-                System.out.println("!!!Can't init DRIVER");
-                System.out.println("Error message: " + e.getLocalizedMessage());
+                logger.error(getNameForLog() + "!!!Can't init DRIVER");
+                logger.error(getNameForLog() + "Error message: " + e.getLocalizedMessage());
                 driver = null;
             }
         }
@@ -393,7 +393,13 @@ public class InstaActor2 implements Runnable, Actor {
         if(InstaActorElements.getPostLikeButton() != null){
             logger.info(getNameForLog() + "Like post");
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-            if(!suspectedActionsDetectorOnLike()){
+            if(suspectedActionsDetectorOnAction()){
+                logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+                likesPercentage = 0;
+                commentsPercentage = 0;
+                resetCurrentPostStatus();
+            }
+            else{
                 currentPostLikeAdded = true;
                 logger.info(getNameForLog() + "Like added");
                 totalLiked++;
@@ -429,19 +435,16 @@ public class InstaActor2 implements Runnable, Actor {
         commentsPercentage = 0;
     }
 
-    private boolean suspectedActionsDetectorOnLike() {
+    private boolean suspectedActionsDetectorOnAction() {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
                 logger.warn(getNameForLog() + "!!!WARNING!!!");
-                logger.warn(getNameForLog() + "SKIP CURRENT TAG Liking\nBREAK!!!!");
-                sendEmailMessage(getNameForLog() + "Like action was blocked by Instagram service<br/>"
-                        + "<b>LIKE option will be disabled for current instance: " + name + "<br/>"
+                sendEmailMessage(getNameForLog() + "Like or Comment action was blocked by Instagram service<br/>"
+                        + "<b>LIKE and COMMENT option will be disabled for current instance: " + name + "<br/>"
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
                 buttonReport.get(0).click();
-                logger.info(getNameForLog() + "DISABLE LIKE ACTION!!!");
-                likesPercentage = 0;
-                resetCurrentPostStatus();
+                sleep(60000);
                 return true;
         }
         return false;
@@ -468,16 +471,14 @@ public class InstaActor2 implements Runnable, Actor {
         if(buttonReport.size() > 0){
                 logger.warn(getNameForLog() + "!!!WARNING!!!");
                 logger.warn(getNameForLog() + "SKIP CURRENT TAG Liking\nBREAK!!!!");
-                System.out.println("Completed tags:");
-                completedTags.forEach(System.out::println);
+                //System.out.println("Completed tags:");
+                //completedTags.forEach(System.out::println);
                 System.out.println("!!!STOP EXECUTION");
                 sendEmailMessage(getNameForLog() + "Comment action was blocked by Instagram service<br/>"
                         + "<b>COMMENT option will be disabled for current instance: " + name + "<br/>"
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
                 buttonReport.get(0).click();
-                commentsPercentage = 0;
-                resetCurrentPostStatus();
                 return true;
         }
         return false;
@@ -501,7 +502,13 @@ public class InstaActor2 implements Runnable, Actor {
             logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
             $(By.cssSelector("article textarea")).val(commentText);
             mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-            if(!suspectedActionsDetectorOnComment()) {
+            if(suspectedActionsDetectorOnAction()) {
+                logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+                likesPercentage = 0;
+                commentsPercentage = 0;
+                resetCurrentPostStatus();
+            }
+            else{
                 logger.info(getNameForLog() + "Comment added: " + commentText);
                 totalComments++;
                 addedComment = commentText;
@@ -598,6 +605,13 @@ public class InstaActor2 implements Runnable, Actor {
         return currentStatus;
     }
 
+    private int executionCounter = 0;
+
+    private int randomPostsCountValue(){
+        int values = (maxPostsCount > 10) ? (maxPostsCount-10) : 10;
+        return ThreadLocalRandom.current().nextInt(values, maxPostsCount + 10);
+    }
+
     @Override
     public void run() {
         running.set(true);
@@ -616,8 +630,8 @@ public class InstaActor2 implements Runnable, Actor {
             initTagsFromFile();
             if (isCompleted) {
                 logger.info("All tags were processed");
-                String message = getNameForLog() + " execution completed.</br>";
                 if(repeatActionsAfterComplete){
+                    executionCounter++;
                     interrupted = false;
                     isCompleted = false;
                     crashCounter = 0;
@@ -644,13 +658,14 @@ public class InstaActor2 implements Runnable, Actor {
                     authenticate();
                     checkIfPopupShown();
                     Collections.shuffle(allTags);
+                    logger.debug(getNameForLog() + "Shuffled Tags: " + allTags);
                     int tagsCollectionSize = allTags.size();
                     AtomicInteger tagCounter = new AtomicInteger(1);
                     int reactionsCounter = 0;
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
-                        if(reactionsCounter == 3) {
-                            analyseAndActToReactions();
+                        if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
+                            followAccounts();
                             reactionsCounter = 0;
                         }
                         reactionsCounter++;
@@ -659,7 +674,7 @@ public class InstaActor2 implements Runnable, Actor {
                             logger.info(getNameForLog() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                             tagCounter.getAndIncrement();
                             if (searchByTag(searchTag)) {
-                                interactWithPosts(maxPostsCount);
+                                interactWithPosts(randomPostsCountValue());
                                 if (!interrupted) {
                                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                                     mouseMoveToElementAndClick(closeButton);
@@ -705,14 +720,15 @@ public class InstaActor2 implements Runnable, Actor {
                     clearSession();
                 }
             }
-            writeListToFile(defectedTags, getDefectedTagsFilePath());
-            writeListToFile(likedPosts, getLikedPostsFilePath());
-            writeListToFile(commentedPosts, getCommentedPostsFilePath());
+
             endTime = LocalDateTime.now();
+            String message = getNameForLog() + " execution completed.</br>";
+            sendEmailMessage(message + generateStatusForEmail());
         }
     }
 
     private void initTagsFromFile() {
+        logger.info(getNameForLog() + "Init tags");
         allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
     }
 
@@ -744,10 +760,6 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private void analyseAndActToReactions() {
-        followAccounts();
-    }
-
     private void followAccounts() {
         open("https://www.instagram.com/accounts/activity/");
         waitSomeTime(getRandomViewTimeout());
@@ -776,6 +788,13 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void clearSession(){
         try{
+
+            writeListToFile(defectedTags, getDefectedTagsFilePath());
+            writeListToFile(likedPosts, getLikedPostsFilePath());
+            writeListToFile(commentedPosts, getCommentedPostsFilePath());
+
+            sleep(30000);
+
             logger.error(getNameForLog() + "Clear WebDriver session");
             closeWebDriver();
         }
@@ -832,6 +851,7 @@ public class InstaActor2 implements Runnable, Actor {
                 +"<p>Started: " + creationDate
                 +"<p>Current run start time: " + startTime
                 +"<p>Current(latest) duration (minutes): " + getExecutionDuration()
+                +"<p>Completed executions: " + executionCounter
                 +"<p>Was interrupted: " + interrupted
                 +"<p>Like percentage: " + likesPercentage + "%"
                 +"<p>Comments percentage: " + commentsPercentage + "%"

@@ -40,7 +40,6 @@ public class ActorsManager {
             try {
                 logger.debug(value.getNameForLog() + "isAlive - " + value.isAlive());
                 logger.debug(value.getNameForLog() + "isActive - " + value.isActive());
-                logger.debug(value.getNameForLog() + "isInterrupted - " + value.isInterrupted());
                 logger.debug(value.getNameForLog() + "State - " + value.getState());
 
 //            if(value.getState() == Thread.State.TERMINATED){
