@@ -311,7 +311,7 @@ public class InstaActor2 implements Runnable, Actor {
             $$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).get(0).click();
         }
         sleep(5000);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).waitUntil(Condition.visible, 10000);
+        $(By.xpath("//div[contains(text(),'Top posts')]")).waitUntil(Condition.visible, 10000);
         SelenideElement tagLocator = null;
         if($$(By.cssSelector("main h1")).size() > 0){
             tagLocator = $$(By.cssSelector("main h1")).get(0);
@@ -332,20 +332,23 @@ public class InstaActor2 implements Runnable, Actor {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
-                try {
-                    String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
-                    URL imageURL = new URL(imageUrl);
-                    BufferedImage saveImage = ImageIO.read(imageURL);
-                    String savedImagePath = "tmp/current_post_image.jpg";
-                    ImageIO.write(saveImage, "jpg", new File(savedImagePath));
+                if(detectMediaContant){
+                    try {
+                        String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
+                        URL imageURL = new URL(imageUrl);
+                        BufferedImage saveImage = ImageIO.read(imageURL);
+                        String savedImagePath = "tmp/current_post_image.jpg";
+                        ImageIO.write(saveImage, "jpg", new File(savedImagePath));
 
-                    //TODO Image Recognition
-                    if(detectMediaContant)
-                        ImageAnalyzer.imageType(savedImagePath);
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                        //TODO Image Recognition
+                        if(detectMediaContant)
+                            ImageAnalyzer.imageType(savedImagePath);
+
+                    } catch (MalformedURLException e) {
+                        logger.error(getNameForLog() + e.getLocalizedMessage());
+                    } catch (IOException e) {
+                        logger.error("Can't detect post type. Can't load image.");
+                    }
                 }
                 currentPostType = PostType.PHOTO;
                 return;
