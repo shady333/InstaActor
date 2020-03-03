@@ -2,7 +2,7 @@ package com.dudar;
 
 public interface Actor {
 
-    String getName();
+    String getNameForLog();
 
     Actor start();
 
@@ -11,6 +11,8 @@ public interface Actor {
     String getStatus();
 
     boolean isAlive();
+
+    boolean isActive();
 
     boolean isInterrupted();
 
@@ -21,4 +23,12 @@ public interface Actor {
     boolean isCompleted();
 
     boolean isStopped();
+
+    void enableLikeAction();
+
+    void disableLikeAction();
+
+    void enableCommentsAction();
+
+    void disableCommentsAction();
 }

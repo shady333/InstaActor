@@ -14,6 +14,7 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class ActorsManager {
 
@@ -36,14 +37,33 @@ public class ActorsManager {
 
     public void trackActiveServices(){
         for(Actor value: actorsMap.values()){
-            logger.debug(value.getName() + "isAlive - "+value.isAlive());
-            logger.debug(value.getName() + "isInterrupted - "+value.isInterrupted());
-            logger.debug(value.getName() + "State - "+value.getState());
+            try {
+                logger.debug(value.getNameForLog() + "isAlive - " + value.isAlive());
+                logger.debug(value.getNameForLog() + "isActive - " + value.isActive());
+                logger.debug(value.getNameForLog() + "State - " + value.getState());
 
-            if(value.getState() == Thread.State.TERMINATED){
-                if(!value.isCompleted() & !value.isStopped()){
-                    value.start();
+//            if(value.getState() == Thread.State.TERMINATED){
+//                if(!value.isCompleted() & !value.isStopped()){
+//                    value.start();
+//                }
+//            }
+            }
+            catch (Exception ex){
+                logger.error("Can't get status for " + value.getNameForLog());
+                logger.error(ex.getMessage());
+            }
+        }
+    }
+
+    public void startTerminatedInstances(){
+        for(Actor currentActor: actorsMap.values()){
+            try{
+                if((currentActor.getState() == Thread.State.TERMINATED) && (!currentActor.isStopped())){
+                    currentActor.start();
                 }
+            }
+            catch (Exception ex){
+                logger.error("Can't start terminated Actor - " + currentActor.getNameForLog());
             }
         }
     }
@@ -59,15 +79,33 @@ public class ActorsManager {
                     initActorsFromDataFolder();
                     ActorsManager.getInstance().startAllRegistered();
                     break;
+                case REMOVE:
+                    if(!actorsMap.get(action.getKey()).isAlive()){
+                        actorsMap.get(action.getKey()).stop();
+                        actorsMap.keySet().removeIf(key -> key == action.getKey());
+                        try {
+                            TimeUnit.SECONDS.wait(30);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        logger.info("Removed Actor with key - " + action.getKey());
+                    }
                 case REGISTER:
-                    try {
-                        Properties prop = new Properties();
-                        prop.load(new FileInputStream("data/" + action.getKey() + "_user.properties"));
-                        actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/" + action.getKey() + "_tags.csv")));
-                    } catch (IOException e) {
-                        logger.error("Can't add item.");
-                        logger.error(e.getMessage());
-                        e.printStackTrace();
+                    if(!actorsMap.containsKey(action.getKey())){
+                        try {
+                            Properties prop = new Properties();
+                            prop.load(new FileInputStream("data/" + action.getKey() + "_user.properties"));
+                            actorsMap.put(action.getKey(), new InstaActor2(action.getKey(), prop, Utilities.getAllTags("data/" + action.getKey() + "_tags.csv")));
+                            logger.info("Registered new Actor - " + action.getKey());
+                        } catch (IOException e) {
+                            logger.error("Can't add item.");
+                            logger.error(e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                        logger.warn("Can't register Actor with name " + action.getKey() +
+                                ".\nActor with same name already registered.");
                     }
                     break;
                 case START:
@@ -79,11 +117,25 @@ public class ActorsManager {
                         catch (Exception ex){
                             ;
                         }
+                        logger.info("Satrted Actor - " + action.getKey());
                     }
-                    logger.info(action.getKey() + " is running");
+                    else
+                        logger.info(action.getKey() + " is running");
                     break;
                 case STOP:
                     actorsMap.get(action.getKey()).stop();
+                    break;
+                case ENABLELIKE:
+                    actorsMap.get(action.getKey()).enableLikeAction();
+                    break;
+                case DISABLELIKE:
+                    actorsMap.get(action.getKey()).disableLikeAction();
+                    break;
+                case ENABLECOMMENT:
+                    actorsMap.get(action.getKey()).enableCommentsAction();
+                    break;
+                case DISABLECOMMENT:
+                    actorsMap.get(action.getKey()).disableCommentsAction();
                     break;
                 case STATUS:
                     if(action.getKey().equals("ALL"))
@@ -114,15 +166,21 @@ public class ActorsManager {
     public void startAllRegistered(){
         actorsMap.entrySet().forEach(entry->{
             proceedAction(new AbstractMap.SimpleEntry<>(entry.getKey(), ActorActions.START));
-
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
     }
 
     public String getAllStatus() {
         String services = "";
         for(String name : actorsMap.keySet()){
-            services += "* " + name + " is active - " + actorsMap.get(name).isAlive() + "<br/>";
-            services += "* " + name + " is active - " + actorsMap.get(name).getThreadStatus() + "<br/>";
+            services += "* " + name + " Alive - " + actorsMap.get(name).isAlive() + "<br/>";
+            services += "* " + name + " Active - " + actorsMap.get(name).isActive() + "<br/>";
+            services += "* " + name + " Stopped - " + actorsMap.get(name).isStopped() + "<br/>";
+            services += "* " + name + " State - " + actorsMap.get(name).getThreadStatus() + "<br/>";
         }
         return services;
     }

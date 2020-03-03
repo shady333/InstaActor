@@ -10,6 +10,7 @@ import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -19,14 +20,16 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Selenide.*;
 
@@ -50,10 +53,10 @@ public class InstaActor2 implements Runnable, Actor {
     private static RemoteWebDriver driver;
     private boolean isStopped = true;
     private boolean isCompleted = false;
-    private boolean isActive = false;
     private String name;
     private Thread t = null;
     private Date creationDate;
+    private boolean sleepMode = false;
 
     final static Logger logger = Logger.getLogger(InstaActor2.class);
     private int viewMinDalay;
@@ -65,34 +68,49 @@ public class InstaActor2 implements Runnable, Actor {
     private int maxPostsCount;
     private String userName;
     private String userPass;
-    private boolean likesEnabled = false;
-    private boolean commentsEnabled = false;
     private boolean debugMode = false;
     private List<String> completedTags = new ArrayList<>();
     private String currentTag = "";
     private List<String> defectedTags = new ArrayList<>();
+    private List<String> likedPosts = new ArrayList<>();
+    private List<String> commentedPosts = new ArrayList<>();
     private String currentPostUrl = "";
     private PostType currentPostType = PostType.UNDEFINED;
     private boolean currentPostLikeAdded = false;
     private int totalLiked = 0;
-    private int warningsCounter = 0;
+
     private String addedComment = "";
     private String currentStatus = "";
     private boolean interrupted = false;
     private boolean emailServiceEnabled = false;
+    private Properties actorProperties;
+
+    private int sleepDurationBetweenRunsInHours = 2;
 
     private int totalComments = 0;
 
     private boolean repeatActionsAfterComplete = false;
 
-    public InstaActor2(String name, Properties actorProperties, List<String> tags){
+    public InstaActor2(String name, Properties properties, List<String> tags){
         this.name = name;
         creationDate = new Date();
         allTags = tags;
-        setupProperties(actorProperties);
+        actorProperties = properties;
+        initValuesFromProperties();
     }
 
-    private void setupProperties(Properties actorProperties) {
+    private void initValuesFromProperties() {
+
+
+        try {
+            Properties prop = new Properties();
+            prop.load(new FileInputStream("data/" + name + "_user.properties"));
+            actorProperties = prop;
+        } catch (IOException e) {
+            logger.error(getNameForLog() + "Can't reinit properties from file");
+            e.printStackTrace();
+        }
+
         if(!StringUtils.isEmpty(actorProperties.getProperty("view.min.delay")))
             viewMinDalay = Integer.parseInt(actorProperties.getProperty("view.min.delay"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("view.max.delay")))
@@ -111,10 +129,6 @@ public class InstaActor2 implements Runnable, Actor {
             userName = actorProperties.getProperty("acc.user");
         if(!StringUtils.isEmpty(actorProperties.getProperty("acc.password")))
             userPass = actorProperties.getProperty("acc.password");
-        if(!StringUtils.isEmpty(actorProperties.getProperty("likes.enabled")))
-            likesEnabled = Boolean.parseBoolean(actorProperties.getProperty("likes.enabled"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("comments.enabled")))
-            commentsEnabled = Boolean.parseBoolean(actorProperties.getProperty("comments.enabled"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("debug.mode")))
             debugMode = Boolean.parseBoolean(actorProperties.getProperty("debug.mode"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("detect.media.content")))
@@ -123,6 +137,8 @@ public class InstaActor2 implements Runnable, Actor {
             emailServiceEnabled = Boolean.parseBoolean(actorProperties.getProperty("email.service"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("service.repeat")))
             repeatActionsAfterComplete = Boolean.parseBoolean(actorProperties.getProperty("service.repeat"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("sleep.duration")))
+            sleepDurationBetweenRunsInHours = Integer.parseInt(actorProperties.getProperty("sleep.duration"));
     }
 
     private void sendEmailMessage(String message){
@@ -165,11 +181,16 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     @Override
+    public boolean isActive(){
+        return !sleepMode;
+    }
+
+    @Override
     public Thread.State getState(){
         return t.getState();
     }
 
-    private static void initDriver(boolean debug) {
+    private void initDriver(boolean debug) {
         if(!debug) {
             String seleniumHub = System.getenv("HUB_HOST");
             String seleniumHubPort = System.getenv("HUB_PORT");
@@ -178,7 +199,11 @@ public class InstaActor2 implements Runnable, Actor {
                 seleniumHubPort = "4444";
             }
             String gridHubUrl = "http://" + seleniumHub + ":" + seleniumHubPort;
-            Utilities.checkGridStatus(gridHubUrl);
+            if(!Utilities.checkGridStatus(gridHubUrl))
+            {
+                logger.error(getNameForLog() + "GRID not ready for execution. Stop service.");
+                stop();
+            }
             try {
                 ChromeOptions chromeOptions = new ChromeOptions();
                 chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
@@ -188,23 +213,43 @@ public class InstaActor2 implements Runnable, Actor {
                 chromeOptions.addArguments("--enable-automation");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
-                System.out.println("!!!Can't init DRIVER");
-                System.out.println("Error message: " + e.getLocalizedMessage());
+                logger.error(getNameForLog() + "!!!Can't init DRIVER");
+                logger.error(getNameForLog() + "Error message: " + e.getLocalizedMessage());
                 driver = null;
             }
         }
         else {
-            driver = new ChromeDriver();
+            ChromeOptions chromeOptions = new ChromeOptions();
+            // Add the WebDriver proxy capability.
+//            Proxy proxy = new Proxy();
+//            proxy.setHttpProxy("103.79.35.181:39049");
+//            chromeOptions.setCapability("proxy", proxy);
+
+            chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
+                    UnexpectedAlertBehaviour.IGNORE);
+//            chromeOptions.setHeadless(true);
+            chromeOptions.addArguments("--no-sandbox");
+            chromeOptions.addArguments("--enable-automation");
+
+            driver = new ChromeDriver(chromeOptions);
         }
         WebDriverRunner.setWebDriver(driver);
     }
 
-    private void authentificate() {
+    private void authenticate() throws InstaActorStopExecutionException {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
-        sleep(getRandonViewTimeout());
+        sleep(getRandomViewTimeout());
         InstaActorElements.getUserLoginInput().val(userName).pressTab();
         InstaActorElements.getUserPasswordInput().val(userPass).pressEnter();
         sleep(3000);
+
+        if(suspectedActionsDetectorAfterLogin())
+            logger.warn("Can't login!!!");
+
+        if($$(By.xpath("//button[contains(.,'Send Security Code')]")).size() > 0){
+            logger.error("Can't login to account");
+            throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN SECURITY CODE");
+        }
     }
 
     private void waitTillPageLoadedAndSearchAvailable(){
@@ -225,14 +270,20 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void waitSomeTime(int duration){
-        try {
-            Thread.sleep(duration);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        long currentPoint = System.currentTimeMillis();
+
+        while(System.currentTimeMillis() < (currentPoint + duration)){
+            logger.debug(getNameForLog() + "Sleep duration - " + duration/1000 + " seconds.\n"
+                + ((currentPoint + duration) - System.currentTimeMillis())/1000 + " seconds left.");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void interactWithTurnOnNotificationsDialog() throws InstaActorStopExecutionException {
+    private void checkIfPopupShown() throws InstaActorStopExecutionException {
         checkCompromizedInfo();
         waitTillPageLoadedAndSearchAvailable();
         ElementsCollection popupWindow = $$(By.xpath("//div[attribute::role='dialog']"));
@@ -247,11 +298,11 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void checkCompromizedInfo() throws InstaActorStopExecutionException {
         if(InstaActorElements.getCompromisedAccountInfo()!=null){
-            throw new InstaActorStopExecutionException("Compromised");
+            throw new InstaActorStopExecutionException(getNameForLog() + "COMPROMIZED");
         }
     }
 
-    private int getRandonViewTimeout(){
+    private int getRandomViewTimeout(){
         return ThreadLocalRandom.current().nextInt(viewMinDalay, viewMaxDelay + 1);
     }
 
@@ -260,27 +311,30 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void mouseMoveToElementAndClick(WebElement element){
-        sleep(getRandonViewTimeout());
+        //sleep(getRandomViewTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
         element.click();
-        sleep(getRandonViewTimeout());
+        sleep(getRandomViewTimeout());
     }
 
     private boolean searchByTag(String searchTag) {
-        sleep(1000);
         SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
         mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
         searchBox.val("#"+searchTag);
-        sleep(3000);
         $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
-        searchBox.sendKeys(Keys.DOWN, Keys.ENTER);
-        sleep(5000);
-        $(By.cssSelector("svg[aria-label=\"Instagram\"]")).shouldBe(Condition.visible);
-        SelenideElement tagLocator = $(By.cssSelector("main h1")).shouldBe(Condition.exist);
 
-        logger.info(getName()  + "Current page Tag - "+tagLocator.getText());
-        if(tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
+        if($$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).size()>0){
+            $$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).get(0).click();
+        }
+        sleep(5000);
+        $(By.xpath("//div[contains(text(),'Top posts')]")).waitUntil(Condition.visible, 10000);
+        SelenideElement tagLocator = null;
+        if($$(By.cssSelector("main h1")).size() > 0){
+            tagLocator = $$(By.cssSelector("main h1")).get(0);
+        }
+        if(tagLocator != null && tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
+            logger.info(getNameForLog()  + "Current page Tag - "+tagLocator.getText());
             currentTag = searchTag;
             return true;
         }
@@ -295,21 +349,25 @@ public class InstaActor2 implements Runnable, Actor {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
-                try {
-                    String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
-                    URL imageURL = new URL(imageUrl);
-                    BufferedImage saveImage = ImageIO.read(imageURL);
-                    String savedImagePath = "tmp/current_post_image.jpg";
-                    ImageIO.write(saveImage, "jpg", new File(savedImagePath));
+                if(detectMediaContant){
+                    try {
+                        String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
+                        URL imageURL = new URL(imageUrl);
+                        BufferedImage saveImage = ImageIO.read(imageURL);
+                        String savedImagePath = "tmp/current_post_image.jpg";
+                        ImageIO.write(saveImage, "jpg", new File(savedImagePath));
 
-                    //TODO Image Recognition
-                    if(detectMediaContant)
-                        ImageAnalyzer.imageType(savedImagePath);
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                        //TODO Image Recognition
+                        if(detectMediaContant)
+                            ImageAnalyzer.imageType(savedImagePath);
+
+                    } catch (MalformedURLException e) {
+                        logger.error(getNameForLog() + e.getLocalizedMessage());
+                    } catch (IOException e) {
+                        logger.error("Can't detect post type. Can't load image.");
+                    }
                 }
+                sleep(getRandomViewTimeout());
                 currentPostType = PostType.PHOTO;
                 return;
             }
@@ -317,7 +375,7 @@ public class InstaActor2 implements Runnable, Actor {
             {
                 for(int i = 1; i < imagePost.size(); i++){
                     if($$(By.cssSelector(".coreSpriteRightChevron")).size()>0) {
-                        logger.info(getName() + "Navigate to next image > " + i);
+                        logger.info(getNameForLog() + "Navigate to next image > " + i);
                         mouseMoveToElementAndClick($(By.cssSelector(".coreSpriteRightChevron")).waitUntil(Condition.visible, 5000));
                     }
                 }
@@ -339,7 +397,7 @@ public class InstaActor2 implements Runnable, Actor {
         return;
     }
 
-    private boolean likePost(){
+    private boolean shouldLikePost(){
         int min = 1;
         int max = 100;
         boolean result;
@@ -354,13 +412,20 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void addLikeToPost() {
         if(InstaActorElements.getPostLikeButton() != null){
-            logger.info(getName() + "Like post");
+            logger.info(getNameForLog() + "Like post");
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-            currentPostLikeAdded = true;
-            totalLiked++;
-        }
-        else{
-            logger.info(getName() + "Post already Liked.");
+            if(suspectedActionsDetectorOnAction()){
+                logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+                likesPercentage = 0;
+                commentsPercentage = 0;
+                resetCurrentPostStatus();
+            }
+            else{
+                currentPostLikeAdded = true;
+                logger.info(getNameForLog() + "Like added");
+                totalLiked++;
+                likedPosts.add(currentPostUrl);
+            }
         }
     }
 
@@ -371,152 +436,149 @@ public class InstaActor2 implements Runnable, Actor {
         currentStatus = "";
     }
 
-    private boolean suspectedActionsDetector() {
+    public void enableLikeAction(){
+        logger.info(getNameForLog() + "ENABLE LIKE ACTION");
+        likesPercentage = 90;
+    }
+
+    public void disableLikeAction(){
+        logger.info(getNameForLog() + "DISABLE LIKE ACTION");
+        likesPercentage = 0;
+    }
+
+    public void enableCommentsAction(){
+        logger.info(getNameForLog() + "ENABLE COMMENTS ACTION");
+        commentsPercentage = 90;
+    }
+
+    public void disableCommentsAction(){
+        logger.info(getNameForLog() + "DISABLE COMMENTS ACTION");
+        commentsPercentage = 0;
+    }
+
+    private boolean suspectedActionsDetectorOnAction() {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
-            warningsCounter++;
-            if(warningsCounter>2){
-                logger.warn(getName() + "!!!WARNING!!!");
-                logger.warn(getName() + "SKIP CURRENT TAG Liking\nBREAK!!!!");
-                System.out.println("Completed tags:");
-                completedTags.forEach(System.out::println);
-                System.out.println("!!!STOP EXECUTION");
-                sendEmailMessage("Unexpected behavior - Stop Action!!! for:<br/>"
+                logger.warn(getNameForLog() + "!!!WARNING!!!");
+                sendEmailMessage(getNameForLog() + "Like or Comment action was blocked by Instagram service<br/>"
+                        + "<b>LIKE and COMMENT option will be disabled for current instance: " + name + "<br/>"
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
-
                 buttonReport.get(0).click();
-                stopExecution();
-                resetCurrentPostStatus();
-                interrupted = true;
+                sleep(60000);
                 return true;
-            }
-            logger.warn(getName() + "!!!WARNING!!!");
-            logger.warn(getName() + "Detected suspicious action detected by service");
+        }
+        return false;
+    }
+
+    private boolean suspectedActionsDetectorAfterLogin() {
+        ElementsCollection caption = $$(By.xpath("//h3[contains(.,'Your Account Was Compromised')]"));
+        ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
+        if((caption.size() > 0) && (buttonReport.size() > 0)){
+            logger.warn(getNameForLog() + "Can't login to account!!!");
+            sendEmailMessage(getNameForLog() + "Can't login to account<br/>"
+                    + "<b>You have to change pasword and re-init current Actor: " + name + "<br/>"
+                    , screenshot("tmp/crash/chash_info.png"));
             buttonReport.get(0).click();
-            sleep(getRandonViewTimeout());
-            if(InstaActorElements.getPostLikeButton()!=null) {
-                System.out.println("Re Like current post");
-                if(likesEnabled)
-                    mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-                sleep(getRandonViewTimeout());
-            }
-            System.out.println("Switching to next tag for likes");
-            resetCurrentPostStatus();
+            logger.info(getNameForLog() + "Stop Actor.");
+            stop();
             return true;
         }
         return false;
     }
 
-    private boolean commentPost(){
+    private boolean suspectedActionsDetectorOnComment() {
+        ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
+        if(buttonReport.size() > 0){
+                logger.warn(getNameForLog() + "!!!WARNING!!!");
+                logger.warn(getNameForLog() + "SKIP CURRENT TAG Liking\nBREAK!!!!");
+                //System.out.println("Completed tags:");
+                //completedTags.forEach(System.out::println);
+                System.out.println("!!!STOP EXECUTION");
+                sendEmailMessage(getNameForLog() + "Comment action was blocked by Instagram service<br/>"
+                        + "<b>COMMENT option will be disabled for current instance: " + name + "<br/>"
+                        +"<b>Tag name:</b> " + currentTag + "<br/>"
+                        +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
+                buttonReport.get(0).click();
+                return true;
+        }
+        return false;
+    }
+
+    private boolean shouldCommentPost(){
         int min = 1;
         int max = 100;
         boolean result = false;
         if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
-            logger.info(getName() + "Add Comment");
+            logger.info(getNameForLog() + "Add Comment");
             result = true;
         }
         return result;
     }
 
-    private String getComment(){
-        if(ThreadLocalRandom.current().nextInt(0, 100) > 50){
-            int maxVal = InstaActorComments.comments.size();
-            int commentIndex = ThreadLocalRandom.current().nextInt(0, maxVal);
-            return InstaActorComments.comments.get(commentIndex);
-        }
-        else{
-            if(this.currentPostType == PostType.VIDEO){
-                logger.info(getName() + "Return Video comment");
-                return InstaActorComments.commentsVideo.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.commentsVideo.size()));
-            }
-            logger.info(getName() + "Return Other Content comment");
-            return
-                    InstaActorComments.comment1.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment1.size()))
-                            .concat(
-                                    InstaActorComments.comment2.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment2.size()))
-                            ).concat(
-                            InstaActorComments.comment3.get(ThreadLocalRandom.current().nextInt(0, InstaActorComments.comment3.size()))
-                    );
-        }
-    }
-
     private void addCommentToPost(){
         //TODO Post comment according to image type
-        if(commentPost())
-        {
-            try {
-                String commentText = getComment();
-                logger.debug(getName() + "Trying to add comment: " + commentText);
-                $(By.cssSelector("article textarea")).val(commentText);
-
-                //TODO add emojji support
-                //Commented part for posting emojji, not working yet
-//                String JS_ADD_TEXT_TO_INPUT = "var elm = arguments[0], txt = arguments[1]; elm.value += txt; elm.dispatchEvent(new Event('change'));";
-//                WebElement textBox = $(By.cssSelector("article textarea"));
-//                executeJavaScript(JS_ADD_TEXT_TO_INPUT, textBox, commentText);
-
-                mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-                logger.info(getName() + "Comment added: " + commentText);
+        try {
+            String commentText = InstaActorComments.generateComment(currentPostType);
+            logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
+            $(By.cssSelector("article textarea")).val(commentText);
+            mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
+            if(suspectedActionsDetectorOnAction()) {
+                logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+                likesPercentage = 0;
+                commentsPercentage = 0;
+                resetCurrentPostStatus();
+            }
+            else{
+                logger.info(getNameForLog() + "Comment added: " + commentText);
                 totalComments++;
                 addedComment = commentText;
-            } catch (Error err) {
-                logger.error(getName() + "ERROR on commenting" + err.getLocalizedMessage());
             }
-        }
-        else{
-            logger.info(getName() + "Skip comment");
+            commentedPosts.add(currentPostUrl);
+        } catch (Error err) {
+            logger.error(getNameForLog() + "ERROR on commenting" + err.getLocalizedMessage());
         }
     }
 
     private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
-        sleep(getRandonViewTimeout());
+        sleep(getRandomViewTimeout());
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
         mouseMoveToElementAndClick(firstPostToLike);
-
         for(int i = 1; i <= maxPostsCount; i++){
-
             if(!running.get()){
                 throw new InstaActorStopExecutionException();
             }
-
             currentPostUrl = WebDriverRunner.url();
             InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
-                sleep(getRandonViewTimeout());
+
                 if(processedPosts.get(currentTag).contains(currentPostUrl)){
-                    logger.info(getName() + "Post was already processed");
-                    logger.info(getName() + "SKIP - " + currentPostUrl);
+                    logger.info(getNameForLog() + "Post was already processed");
+                    logger.info(getNameForLog() + "SKIP - " + currentPostUrl);
                     continue;
                 }
+                sleep(getRandomViewTimeout());
                 detectPostTypeAndAct();
-                if(likePost()){
-                    if(likesEnabled) {
+                if(shouldLikePost()) {
+                    if (!likedPosts.contains(currentPostUrl)) {
                         addLikeToPost();
-                        if (suspectedActionsDetector())
-                            return;
                     }
-                    else{
-                        logger.info(getName() + "!!!Likes option is disabled");
-                    }
-                    if(commentsEnabled) {
+                }
+                if(shouldCommentPost()){
+                    if(!commentedPosts.contains(currentPostUrl)) {
                         addCommentToPost();
-                        if (suspectedActionsDetector())
-                            return;
                     }
                 }
             }
-            logger.info(getName() + "Current post info:\n" + getCurrentStatusString(i));
+            logger.info(getNameForLog() + "Current post info:\n" + getCurrentStatusString(i));
             ArrayList<String> items = processedPosts.get(currentTag);
             items.add(currentPostUrl);
             processedPosts.put(currentTag, items);
             resetCurrentPostStatus();
-
             if (!moveToNextPostIfAvailable())
                 break;
-            sleep(getRandonViewTimeout());
         }
     }
 
@@ -554,9 +616,8 @@ public class InstaActor2 implements Runnable, Actor {
     public String viewCurrentParameters(){
         String currentStatus = "*****InstaActor Parameters*****\n"
                 + "Name - " + name + "\n"
-                + "Like enabled - " + likesEnabled + "\n"
+                + "Active - " + isActive() + "\n"
                 + "Like percentage - " + likesPercentage + "\n"
-                + "Comment enabled - " + commentsEnabled + "\n"
                 + "Comment percentage - " + commentsPercentage +"\n"
                 + "View parameters: " + viewMinDalay + " " + viewMaxDelay + "\n"
                 + "Video parameters: " + viewMinDelayVideo + " " + viewMaxDelayVideo + "\n"
@@ -565,25 +626,42 @@ public class InstaActor2 implements Runnable, Actor {
         return currentStatus;
     }
 
+    private int executionCounter = 0;
+
+    private int randomPostsCountValue(){
+        int values = (maxPostsCount > 10) ? (maxPostsCount-10) : 10;
+        return ThreadLocalRandom.current().nextInt(values, maxPostsCount + 10);
+    }
+
     @Override
     public void run() {
         running.set(true);
         while (running.get()) {
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
-            //isStopped = false;
+            commentedPosts.addAll(Utilities.getAllTags(getCommentedPostsFilePath()));
+            commentedPosts = commentedPosts.stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+            likedPosts.addAll(Utilities.getAllTags(getLikedPostsFilePath()));
+            likedPosts = likedPosts.stream()
+                    .distinct()
+                    .collect(Collectors.toList());
+            initValuesFromProperties();
+            initTagsFromFile();
             if (isCompleted) {
                 logger.info("All tags were processed");
-                String message = getName() + " execution completed.</br>";
-                sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
+                    executionCounter++;
                     interrupted = false;
-                    isStopped = false;
                     isCompleted = false;
                     crashCounter = 0;
-                    defectedTags = new ArrayList<>();
                     completedTags = new ArrayList<>();
-                    waitSomeTime(3600000);
+                    sleepMode = true;
+                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
+                    sleepMode = false;
+                    startTime = LocalDateTime.now();
+                    endTime = null;
                 }
                 else {
                     stopExecution();
@@ -594,30 +672,31 @@ public class InstaActor2 implements Runnable, Actor {
                     stopExecution();
                     sendEmailMessage("CrashCounter exceed max value for - <b>" + name
                             + "</b><p>Stop execution.<p>"+generateStatusForEmail());
+                    crashCounter = 0;
                     break;
                 }
                 try {
                     initDriver(debugMode);
-                    isActive = true;
-                    authentificate();
-                    interactWithTurnOnNotificationsDialog();
+                    authenticate();
+                    checkIfPopupShown();
                     Collections.shuffle(allTags);
+                    logger.debug(getNameForLog() + "Shuffled Tags: " + allTags);
                     int tagsCollectionSize = allTags.size();
                     AtomicInteger tagCounter = new AtomicInteger(1);
                     int reactionsCounter = 0;
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
-                        if(reactionsCounter == 3) {
-                            analyseAndActoToReactions();
+                        if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
+                            followAccounts();
                             reactionsCounter = 0;
                         }
                         reactionsCounter++;
                         if (!completedTags.contains(searchTag)) {
                             completedTags.add(searchTag);
-                            logger.info(getName() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                            logger.info(getNameForLog() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
                             tagCounter.getAndIncrement();
                             if (searchByTag(searchTag)) {
-                                interactWithPosts(maxPostsCount);
+                                interactWithPosts(randomPostsCountValue());
                                 if (!interrupted) {
                                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                                     mouseMoveToElementAndClick(closeButton);
@@ -637,13 +716,12 @@ public class InstaActor2 implements Runnable, Actor {
                 catch (AssertionError err){
 
                     logger.info("Selenide error: " + err.getMessage());
-                    sendEmailMessage(getName() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
-                    //crashCounter++;
+                    sendEmailMessage(getNameForLog() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
                 }
                 catch (InstaActorStopExecutionException ex) {
                     running.set(false);
                     isStopped = true;
-                    String message = getName() + "Execution stopped!!!";
+                    String message = getNameForLog() + "Execution stopped!!!";
                     logger.info(message);
                     message += "<p>Error details: <p>"+ex.getMessage();
                     sendEmailMessage(message + "<p>" + generateStatusForEmail(),screenshot("tmp/crash/stop_execution.png"));
@@ -658,62 +736,114 @@ public class InstaActor2 implements Runnable, Actor {
                     else {
                         sendEmailMessage("<p> Service <b>" + name + "</b> crashed with exception:<p>"
                                 + ex.getMessage(), screenshot("tmp/crash/crash_exception_info.png"));
-                        isActive = false;
                         crashCounter++;
                     }
                 } finally {
                     clearSession();
                 }
             }
+
+            endTime = LocalDateTime.now();
+            String message = getNameForLog() + " execution completed.</br>";
+            sendEmailMessage(message + generateStatusForEmail());
         }
     }
 
-    private void analyseAndActoToReactions() {
-        followAccounts();
+    private void initTagsFromFile() {
+        logger.info(getNameForLog() + "Init tags");
+        allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
+    }
+
+    @NotNull
+    private String getDefectedTagsFilePath() {
+        return "data/results/"+name+"_defectedTags.csv";
+    }
+
+    @NotNull
+    private String getLikedPostsFilePath() {
+        return "data/results/"+name+"_likedPosts.csv";
+    }
+
+    @NotNull
+    private String getCommentedPostsFilePath() {
+        return "data/results/"+name+"_commentedPosts.csv";
+    }
+
+    private void writeListToFile(List listName, String fileName){
+
+        try {
+            FileWriter writer = new FileWriter(fileName);
+            for(Object str : listName){
+                writer.write((String)str + ",");
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void followAccounts() {
         open("https://www.instagram.com/accounts/activity/");
-        waitSomeTime(getRandonViewTimeout());
+        waitSomeTime(getRandomViewTimeout());
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
         int maxItems = (followButtons.size()>5)?5:followButtons.size();
         for(int i=0; i<maxItems; i++){
-            waitSomeTime(getRandonViewTimeout());
-            logger.info(getName() + "follow account");
-            followButtons.get(i).click();
-            waitSomeTime(getRandonViewTimeout());
-            if(InstaActorElements.getActionBlockedDialog()!=null){
-                logger.info(getName() + "Action Blocked dialog");
-                $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
-                return;
+            waitSomeTime(getRandomViewTimeout());
+            if(followButtons.get(0).is(Condition.visible)){
+                logger.info(getNameForLog() + "follow account");
+                try{
+                    followButtons.get(0).click();
+                }
+                catch(AssertionError err){
+                    executeJavaScript("arguments[0].click()", followButtons.get(0));
+                }
+                waitSomeTime(getRandomViewTimeout());
+                if(InstaActorElements.getActionBlockedDialog()!=null){
+                    logger.info(getNameForLog() + "Action Blocked dialog");
+                    $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
+                    return;
+                }
             }
-
-            waitSomeTime(getRandonViewTimeout());
+            waitSomeTime(getRandomViewTimeout());
         }
     }
 
     private void clearSession(){
         try{
-            logger.error(getName() + "Clear WebDriver session");
+            isCompleted = false;
+            writeListToFile(defectedTags, getDefectedTagsFilePath());
+            writeListToFile(likedPosts, getLikedPostsFilePath());
+            writeListToFile(commentedPosts, getCommentedPostsFilePath());
+
+            sleep(30000);
+
+            logger.error(getNameForLog() + "Clear WebDriver session");
             closeWebDriver();
         }
         catch (IllegalStateException ex){
-            logger.error(getName() + ex.getMessage());
+            logger.error(getNameForLog() + ex.getMessage());
         }
         catch (Exception ex){
-            logger.error(getName() + ex.getMessage());
+            logger.error(getNameForLog() + ex.getMessage());
         }
         finally {
             driver = null;
         }
     }
 
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
     public Actor start () {
-        logger.info(getName() + "Starting...");
+        logger.info(getNameForLog() + "Starting...");
         isStopped = false;
+        isCompleted = false;
         crashCounter = 0;
+        startTime = LocalDateTime.now();
+        endTime = null;
         if (t == null) {
             t = new Thread (this, name);
+            startTime = LocalDateTime.now();
             t.start ();
         } else if (t.getState() == Thread.State.TERMINATED) {
             logger.info("Starting not active thread");
@@ -725,21 +855,32 @@ public class InstaActor2 implements Runnable, Actor {
 
     @Override
     public Actor stop() {
-        logger.info(getName() + "STOP");
+        logger.info(getNameForLog() + "STOP");
+        endTime = LocalDateTime.now();
         clearSession();
         stopExecution();
+        endTime = LocalDateTime.now();
         return this;
+    }
+
+    private long getExecutionDuration(){
+        return ChronoUnit.MINUTES.between(startTime, (endTime == null) ? LocalDateTime.now() : endTime);
     }
 
     private String generateStatusForEmail(){
         String status = "<h1>InstaActor STATUS</h1>"
-                +"<p>Sevice name: " + name
-                +"<p>Sevice is running: " + isAlive()
-                +"<p>Was interruped: " + interrupted
+                +"<p>Service name: " + name
+                +"<p>Service is running: " + isActive()
+                +"<p>Started: " + creationDate
+                +"<p>Current run start time: " + startTime
+                +"<p>Current(latest) duration (minutes): " + getExecutionDuration()
+                +"<p>Completed executions: " + executionCounter
+                +"<p>Was interrupted: " + interrupted
+                +"<p>Like percentage: " + likesPercentage + "%"
+                +"<p>Comments percentage: " + commentsPercentage + "%"
                 +"<p>Completed Tags: " + completedTags.size()
                 +"<p>Defected Tags: " + defectedTags.size()
                 +"<p>Tag: " + currentTag + " from " + allTags.size()
-//                +"Current post number " + i + " from " + maxPostsCount + ".\n";
                 + "<p>Url: " + currentPostUrl
                 + "<p>Type: " + currentPostType.toString()
                 + "<p>Like: " + currentPostLikeAdded;
@@ -756,7 +897,7 @@ public class InstaActor2 implements Runnable, Actor {
         String currentStatus = "/**** Insta Actor "+name+" ****/\n";
         currentStatus += "|\n";
         currentStatus += "|********************************\n";
-        logger.info(getName() + "Current status:\n" + currentStatus);
+        logger.info(getNameForLog() + "Current status:\n" + currentStatus);
         sendEmailMessage(generateStatusForEmail());
         return currentStatus;
     }
@@ -764,10 +905,10 @@ public class InstaActor2 implements Runnable, Actor {
     public void  stopExecution(){
         running.set(false);
         isStopped = true;
-        logger.info(getName() + "Stopping the execution");
+        logger.info(getNameForLog() + "Stopping the execution");
     }
 
-    public String getName() {
+    public String getNameForLog() {
         return name + " >>> ";
     }
 }
