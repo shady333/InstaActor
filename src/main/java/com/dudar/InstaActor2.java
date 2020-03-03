@@ -219,12 +219,24 @@ public class InstaActor2 implements Runnable, Actor {
             }
         }
         else {
-            driver = new ChromeDriver();
+            ChromeOptions chromeOptions = new ChromeOptions();
+            // Add the WebDriver proxy capability.
+//            Proxy proxy = new Proxy();
+//            proxy.setHttpProxy("103.79.35.181:39049");
+//            chromeOptions.setCapability("proxy", proxy);
+
+            chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
+                    UnexpectedAlertBehaviour.IGNORE);
+//            chromeOptions.setHeadless(true);
+            chromeOptions.addArguments("--no-sandbox");
+            chromeOptions.addArguments("--enable-automation");
+
+            driver = new ChromeDriver(chromeOptions);
         }
         WebDriverRunner.setWebDriver(driver);
     }
 
-    private void authenticate() {
+    private void authenticate() throws InstaActorStopExecutionException {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
         sleep(getRandomViewTimeout());
         InstaActorElements.getUserLoginInput().val(userName).pressTab();
@@ -233,6 +245,11 @@ public class InstaActor2 implements Runnable, Actor {
 
         if(suspectedActionsDetectorAfterLogin())
             logger.warn("Can't login!!!");
+
+        if($$(By.xpath("//button[contains(.,'Send Security Code')]")).size() > 0){
+            logger.error("Can't login to account");
+            throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN SECURITY CODE");
+        }
     }
 
     private void waitTillPageLoadedAndSearchAvailable(){
@@ -294,7 +311,7 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void mouseMoveToElementAndClick(WebElement element){
-        sleep(getRandomViewTimeout());
+        //sleep(getRandomViewTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
         element.click();
@@ -350,6 +367,7 @@ public class InstaActor2 implements Runnable, Actor {
                         logger.error("Can't detect post type. Can't load image.");
                     }
                 }
+                sleep(getRandomViewTimeout());
                 currentPostType = PostType.PHOTO;
                 return;
             }
@@ -654,6 +672,7 @@ public class InstaActor2 implements Runnable, Actor {
                     stopExecution();
                     sendEmailMessage("CrashCounter exceed max value for - <b>" + name
                             + "</b><p>Stop execution.<p>"+generateStatusForEmail());
+                    crashCounter = 0;
                     break;
                 }
                 try {
@@ -791,7 +810,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void clearSession(){
         try{
-
+            isCompleted = false;
             writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
@@ -818,6 +837,7 @@ public class InstaActor2 implements Runnable, Actor {
     public Actor start () {
         logger.info(getNameForLog() + "Starting...");
         isStopped = false;
+        isCompleted = false;
         crashCounter = 0;
         startTime = LocalDateTime.now();
         endTime = null;
