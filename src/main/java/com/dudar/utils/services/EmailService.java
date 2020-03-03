@@ -204,14 +204,11 @@ public class EmailService {
                                         fos.write(buf, 0, bytesRead);
                                     }
                                     fos.close();
+                                    resultAction = ActorActions.UPLOAD;
                                     break;
                                 }
-
                             }
-                                resultAction = ActorActions.UPLOAD;
                         }
-
-
                     }
                 }
             }
