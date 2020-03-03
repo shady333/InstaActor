@@ -13,20 +13,27 @@ You can use application on your own risk and responsibility.
 
 ## Optional:
 * gmail account for agent interactions via email commands. [more info](#setup-and-configure-email-service)
-* imagga account for image recognition possibilities. [IMAGGA Service](https://imagga.com/)
+* imagga account for image recognition possibilities. [IMAGGA Service](https://imagga.com/) [Not fully implemented]
 
 # Steps to configure and execute
 
-## Run service inside Docker
+## General steps
 
 1. Download git repo sources
 2. Open "data" folder and update(and/or add more) files:
     1. Modify __*user.properties__ file (it should be like __myInsta_user.properties__) with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
-    2. Modify __*tags.csv__ file (it should be like __myInsta_tags.properties__) with required tags to be used.
+    2. Modify __*tags.csv__ file (it should be like __myInsta_tags.properties__) with tags to be used by Actor.
     All tags should be comma separated without spaces.
 3. Modify access to other 3rd party services (optional):
-    1. IMAGGA service: __access.properties__, update file with your credentials for imagga service
-    2. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
+    1. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
+    2. IMAGGA service: __access.properties__, update file with your credentials for imagga service
+
+## Run service as a java process
+4. Execute "__runAll.sh__" file.
+5. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
+6. To Stop execution - stop the process "Ctrl+C".
+
+## Run service inside Docker
 4. Build an Docker image:
     ```
     'docker image build -t instaactor:v0.2 .'
@@ -40,21 +47,7 @@ You can use application on your own risk and responsibility.
     ```
     'docker-compose down'
    ```
-
-## Run service as a java process
-
-1. Download git repo sources
-2. Open "data" folder and update(and/or add more) files:
-    1. Modify __*user.properties__ file (it should be like __myInsta_user.properties__) with your Instagram account info and actor parameters [details below](#InstaActor-configuration-parameters)
-    2. Modify __*tags.csv__ file (it should be like __myInsta_tags.properties__) with required tags to be used.
-    All tags should be comma separated without spaces.
-3. Modify access to other 3rd party services (optional):
-    1. IMAGGA service: __access.properties__, update file with your credentials for imagga service
-    2. [Gmail service](#Setup-and-configure-email-service): __email.properties__, update file with your credentials for gmail service
-4. Execute "__runAll.sh__" file.
-4. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
-5. To Stop execution - stop the process "Ctrl+C".
-
+   
 # InstaActor configuration parameters
 __*user.properties__
 
@@ -99,18 +92,20 @@ Email structure for interaction:
 To: email address of your gmail account which proceed actions.
 Subject: __ACTION_NAME ACTOR_NAME__
 
-|Subject variants|Description|
-|:---|:---|
-|ACTION_START ACTOR_"__name__"|Start service with provided __name__|
-|ACTION_STOP  ACTOR_"__name__"|Stop service with __name__|
-|ACTION_ENABLELIKE  ACTOR_"__name__"|Enable Like actions for service with __name__.|
-|ACTION_DISABLELIKE  ACTOR_"__name__"|Disable Like actions for service with __name__|
-|ACTION_ENABLECOMMENT  ACTOR_"__name__"|Enable Comment actions for service with __name__|
-|ACTION_DISABLECOMMENT  ACTOR_"__name__"|Disable Comment actions for service with __name__|
-|ACTION_STOP ACTOR_ALL|Stop execution for all instances|
-|ACTION_ABORT ACTOR_ALL|Stop application execution. System.exit()|
-|ACTION_STATUS ACTOR_"__name__"|Return status for service with __name__|
-|ACTION_STATUS ACTOR_ALL|Return status for all registered services|
+|Subject variants|Description|Example (Actor name - __MyInsta__)|
+|:---|:---|:---|
+|ACTION_START ACTOR_"__name__"|Start service with provided __name__|Email Subject: ACTION_START ACTOR_MyInsta|
+|ACTION_STOP  ACTOR_"__name__"|Stop service with __name__||
+|ACTION_ENABLELIKE  ACTOR_"__name__"|Enable Like actions for service with __name__.||
+|ACTION_DISABLELIKE  ACTOR_"__name__"|Disable Like actions for service with __name__||
+|ACTION_ENABLECOMMENT  ACTOR_"__name__"|Enable Comment actions for service with __name__||
+|ACTION_DISABLECOMMENT  ACTOR_"__name__"|Disable Comment actions for service with __name__||
+|ACTION_DOWNLOAD ACTOR_"__name__"|Will sent an email with actor __name__ properties file|Email Subject: ACTION_DOWNLOAD ACTOR_MyInsta<br><br>You will receive an email with MyInsta.properties file attached.|
+|ACTION_UPLOAD ACTOR_"__name__"|Replace existing actor __name__ properties file|Email Subject: ACTION_UPLOAD ACTOR_MyInsta<br>Attachment: MyInsta.properties<br><br>This will replace existing MyInsta.properties file with file from attachement|
+|ACTION_STOP ACTOR_ALL|Stop execution for all instances||
+|ACTION_ABORT ACTOR_ALL|Stop application execution. System.exit()||
+|ACTION_STATUS ACTOR_"__name__"|Return status for service with __name__||
+|ACTION_STATUS ACTOR_ALL|Return status for all registered services||
 
 #______________
     
