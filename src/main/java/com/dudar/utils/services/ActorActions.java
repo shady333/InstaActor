@@ -12,5 +12,7 @@ public enum ActorActions {
     ENABLELIKE,
     DISABLELIKE,
     ENABLECOMMENT,
-    DISABLECOMMENT
+    DISABLECOMMENT,
+    DOWNLOAD,
+    UPLOAD
 }

@@ -10,6 +10,10 @@ import org.testcontainers.shaded.org.apache.commons.io.FilenameUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -148,7 +152,22 @@ public class ActorsManager {
                         actorsMap.get(action.getKey()).getStatus();
                     }
                     break;
-                default:
+                case DOWNLOAD:
+                    String propFilePath = "data/" + action.getKey() + "_user.properties";
+                    EmailService.generateAndSendEmail(action.getKey() + " PROPERTIES FILE", propFilePath);
+                    break;
+                case UPLOAD:
+                    try {
+                        Path from = Paths.get("tmp/" + action.getKey() + "_user.properties"); //convert from File to Path
+                        Path to = Paths.get("data/" + action.getKey() + "_user.properties"); //convert from String to Path
+                        Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    catch (IOException ex){
+                        logger.error("Can't replace properties file\n" + ex.getMessage());
+                    }
+                    break;
+
+                    default:
                     ;
             }
     }

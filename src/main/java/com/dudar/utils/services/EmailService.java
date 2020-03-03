@@ -1,6 +1,7 @@
 package com.dudar.utils.services;
 
 import com.dudar.utils.Utilities;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import javax.activation.DataHandler;
@@ -12,7 +13,10 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.search.FlagTerm;
 import javax.activation.DataSource;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Properties;
@@ -175,6 +179,36 @@ public class EmailService {
                             resultAction = ActorActions.ENABLECOMMENT;
                         } else if (actionName.equals(ActorActions.DISABLECOMMENT.toString())) {
                             resultAction = ActorActions.DISABLECOMMENT;
+                        }
+                        else if (actionName.equals("DOWNLOAD")) {
+                            resultAction = ActorActions.DOWNLOAD;
+                        }
+                        else if (actionName.equals("UPLOAD")) {
+                            Multipart multipart = (Multipart) message.getContent();
+
+                            for (int j = 0; j < multipart.getCount(); j++) {
+                                BodyPart bodyPart = multipart.getBodyPart(j);
+                                if (!Part.ATTACHMENT.equalsIgnoreCase(bodyPart.getDisposition()) &&
+                                        StringUtils.isBlank(bodyPart.getFileName())) {
+                                    continue; // dealing with attachments only
+                                }
+                                InputStream is = bodyPart.getInputStream();
+                                // -- EDIT -- SECURITY ISSUE --
+                                // do not do this in production code -- a malicious email can easily contain this filename: "../etc/passwd", or any other path: They can overwrite _ANY_ file on the system that this code has write access to!
+                                if(bodyPart.getFileName().contains(".properties")){
+                                    File f = new File("tmp/" + bodyPart.getFileName());
+                                    FileOutputStream fos = new FileOutputStream(f);
+                                    byte[] buf = new byte[4096];
+                                    int bytesRead;
+                                    while ((bytesRead = is.read(buf)) != -1) {
+                                        fos.write(buf, 0, bytesRead);
+                                    }
+                                    fos.close();
+                                    break;
+                                }
+
+                            }
+                                resultAction = ActorActions.UPLOAD;
                         }
 
 
