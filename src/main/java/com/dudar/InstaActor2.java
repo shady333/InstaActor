@@ -220,14 +220,10 @@ public class InstaActor2 implements Runnable, Actor {
         }
         else {
             ChromeOptions chromeOptions = new ChromeOptions();
-            // Add the WebDriver proxy capability.
-//            Proxy proxy = new Proxy();
-//            proxy.setHttpProxy("103.79.35.181:39049");
-//            chromeOptions.setCapability("proxy", proxy);
 
             chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                     UnexpectedAlertBehaviour.IGNORE);
-//            chromeOptions.setHeadless(true);
+            chromeOptions.setHeadless(false);
             chromeOptions.addArguments("--no-sandbox");
             chromeOptions.addArguments("--enable-automation");
 
