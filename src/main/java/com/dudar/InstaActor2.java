@@ -227,6 +227,10 @@ public class InstaActor2 implements Runnable, Actor {
             chromeOptions.addArguments("--no-sandbox");
             chromeOptions.addArguments("--enable-automation");
 
+            // Add the WebDriver proxy capability.
+//            String proxy = "150.95.131.174:3128";
+//            chromeOptions.addArguments("--proxy-server=" +  proxy);
+
             driver = new ChromeDriver(chromeOptions);
         }
         WebDriverRunner.setWebDriver(driver);
