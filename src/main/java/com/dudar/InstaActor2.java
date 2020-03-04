@@ -220,14 +220,10 @@ public class InstaActor2 implements Runnable, Actor {
         }
         else {
             ChromeOptions chromeOptions = new ChromeOptions();
-            // Add the WebDriver proxy capability.
-//            Proxy proxy = new Proxy();
-//            proxy.setHttpProxy("103.79.35.181:39049");
-//            chromeOptions.setCapability("proxy", proxy);
 
             chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                     UnexpectedAlertBehaviour.IGNORE);
-//            chromeOptions.setHeadless(true);
+            chromeOptions.setHeadless(false);
             chromeOptions.addArguments("--no-sandbox");
             chromeOptions.addArguments("--enable-automation");
 
@@ -243,12 +239,17 @@ public class InstaActor2 implements Runnable, Actor {
         InstaActorElements.getUserPasswordInput().val(userPass).pressEnter();
         sleep(3000);
 
+
+
         if(suspectedActionsDetectorAfterLogin())
             logger.warn("Can't login!!!");
 
         if($$(By.xpath("//button[contains(.,'Send Security Code')]")).size() > 0){
             logger.error("Can't login to account");
             throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN SECURITY CODE");
+        } else if ($$(By.xpath("//button[contains(.,'Log In')]")).size() > 0) {
+            logger.error("Can't login to account");
+            throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN ERROR");
         }
     }
 
@@ -650,7 +651,9 @@ public class InstaActor2 implements Runnable, Actor {
             initValuesFromProperties();
             initTagsFromFile();
             if (isCompleted) {
-                logger.info("All tags were processed");
+                logger.info(getNameForLog() + "All tags were processed");
+                String message = getNameForLog() + " execution completed.</br>";
+                sendEmailMessage(message + generateStatusForEmail());
                 if(repeatActionsAfterComplete){
                     executionCounter++;
                     interrupted = false;
@@ -670,6 +673,7 @@ public class InstaActor2 implements Runnable, Actor {
             while (!isCompleted & !isStopped) {
                 if (crashCounter > 10) {
                     stopExecution();
+                    //clearSession();
                     sendEmailMessage("CrashCounter exceed max value for - <b>" + name
                             + "</b><p>Stop execution.<p>"+generateStatusForEmail());
                     crashCounter = 0;
@@ -714,17 +718,15 @@ public class InstaActor2 implements Runnable, Actor {
                     logger.info(getStatus());
                 }
                 catch (AssertionError err){
-
                     logger.info("Selenide error: " + err.getMessage());
                     sendEmailMessage(getNameForLog() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
                 }
                 catch (InstaActorStopExecutionException ex) {
-                    running.set(false);
-                    isStopped = true;
                     String message = getNameForLog() + "Execution stopped!!!";
                     logger.info(message);
                     message += "<p>Error details: <p>"+ex.getMessage();
                     sendEmailMessage(message + "<p>" + generateStatusForEmail(),screenshot("tmp/crash/stop_execution.png"));
+                    stopExecution();
                 } catch (Exception ex) {
                     logger.error(ex.getMessage());
                     if(ex.getMessage().contains("DevToolsActivePort file doesn't exist"))
@@ -744,8 +746,7 @@ public class InstaActor2 implements Runnable, Actor {
             }
 
             endTime = LocalDateTime.now();
-            String message = getNameForLog() + " execution completed.</br>";
-            sendEmailMessage(message + generateStatusForEmail());
+
         }
     }
 
@@ -898,14 +899,16 @@ public class InstaActor2 implements Runnable, Actor {
         currentStatus += "|\n";
         currentStatus += "|********************************\n";
         logger.info(getNameForLog() + "Current status:\n" + currentStatus);
-        sendEmailMessage(generateStatusForEmail());
+        //sendEmailMessage(generateStatusForEmail());
         return currentStatus;
     }
 
     public void  stopExecution(){
         running.set(false);
         isStopped = true;
+        isCompleted = false;
         logger.info(getNameForLog() + "Stopping the execution");
+        clearSession();
     }
 
     public String getNameForLog() {
