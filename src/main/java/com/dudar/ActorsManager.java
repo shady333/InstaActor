@@ -161,6 +161,7 @@ public class ActorsManager {
                         Path from = Paths.get("tmp/" + action.getKey() + "_user.properties"); //convert from File to Path
                         Path to = Paths.get("data/" + action.getKey() + "_user.properties"); //convert from String to Path
                         Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                        EmailService.generateAndSendEmail(action.getKey() + "Properties file updated");
                     }
                     catch (IOException ex){
                         logger.error("Can't replace properties file\n" + ex.getMessage());

@@ -223,7 +223,7 @@ public class InstaActor2 implements Runnable, Actor {
 
             chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                     UnexpectedAlertBehaviour.IGNORE);
-            chromeOptions.setHeadless(false);
+            chromeOptions.setHeadless(true);
             chromeOptions.addArguments("--no-sandbox");
             chromeOptions.addArguments("--enable-automation");
 
@@ -237,7 +237,7 @@ public class InstaActor2 implements Runnable, Actor {
         sleep(getRandomViewTimeout());
         InstaActorElements.getUserLoginInput().val(userName).pressTab();
         InstaActorElements.getUserPasswordInput().val(userPass).pressEnter();
-        sleep(3000);
+        sleep(10000);
 
 
 
@@ -493,8 +493,6 @@ public class InstaActor2 implements Runnable, Actor {
         if(buttonReport.size() > 0){
                 logger.warn(getNameForLog() + "!!!WARNING!!!");
                 logger.warn(getNameForLog() + "SKIP CURRENT TAG Liking\nBREAK!!!!");
-                //System.out.println("Completed tags:");
-                //completedTags.forEach(System.out::println);
                 System.out.println("!!!STOP EXECUTION");
                 sendEmailMessage(getNameForLog() + "Comment action was blocked by Instagram service<br/>"
                         + "<b>COMMENT option will be disabled for current instance: " + name + "<br/>"
@@ -785,6 +783,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void followAccounts() {
         open("https://www.instagram.com/accounts/activity/");
+        logger.info(getNameForLog() + "Review and follow accounts");
         waitSomeTime(getRandomViewTimeout());
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
         int maxItems = (followButtons.size()>5)?5:followButtons.size();
@@ -792,12 +791,12 @@ public class InstaActor2 implements Runnable, Actor {
             waitSomeTime(getRandomViewTimeout());
             if(followButtons.get(0).is(Condition.visible)){
                 logger.info(getNameForLog() + "follow account");
-                try{
-                    followButtons.get(0).click();
-                }
-                catch(AssertionError err){
+                //try{
+                //    followButtons.get(0).click();
+                //}
+                //catch(AssertionError err){
                     executeJavaScript("arguments[0].click()", followButtons.get(0));
-                }
+                //}
                 waitSomeTime(getRandomViewTimeout());
                 if(InstaActorElements.getActionBlockedDialog()!=null){
                     logger.info(getNameForLog() + "Action Blocked dialog");
@@ -811,7 +810,7 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void clearSession(){
         try{
-            isCompleted = false;
+            //isCompleted = false;
             writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
