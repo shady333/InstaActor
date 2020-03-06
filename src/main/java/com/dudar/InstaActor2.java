@@ -223,7 +223,7 @@ public class InstaActor2 implements Runnable, Actor {
 
             chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                     UnexpectedAlertBehaviour.IGNORE);
-            chromeOptions.setHeadless(true);
+            chromeOptions.setHeadless(false);
             chromeOptions.addArguments("--no-sandbox");
             chromeOptions.addArguments("--enable-automation");
 
@@ -686,10 +686,13 @@ public class InstaActor2 implements Runnable, Actor {
                     int tagsCollectionSize = allTags.size();
                     AtomicInteger tagCounter = new AtomicInteger(1);
                     int reactionsCounter = 0;
+
+                    followSuggestedAccounts();
+
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
                         if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
-                            followAccounts();
+                            followAccountFromYourFeed();
                             reactionsCounter = 0;
                         }
                         reactionsCounter++;
@@ -781,8 +784,18 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private void followAccounts() {
+    private void followAccountFromYourFeed(){
         open("https://www.instagram.com/accounts/activity/");
+        followAccounts();
+    }
+
+    private void followSuggestedAccounts(){
+        open("https://www.instagram.com/explore/people/suggested/");
+        $(By.xpath("//h4[text()='Suggested']")).waitUntil(Condition.visible, 10000);
+        followAccounts();
+    }
+
+    private void followAccounts() {
         logger.info(getNameForLog() + "Review and follow accounts");
         waitSomeTime(getRandomViewTimeout());
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
@@ -801,6 +814,7 @@ public class InstaActor2 implements Runnable, Actor {
                 if(InstaActorElements.getActionBlockedDialog()!=null){
                     logger.info(getNameForLog() + "Action Blocked dialog");
                     $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
+                    waitSomeTime(getRandomViewTimeout());
                     return;
                 }
             }
