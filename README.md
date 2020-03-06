@@ -69,6 +69,7 @@ __*user.properties__
 |email.service|boolean|Use configured email service for interactions|
 |service.repeat|boolean|Shall service start over after completion|
 |sleep.duration|int|Value in hours to wait before starting new run after completion (2 hour by default)|
+|proxy|String|To use proxy address like 123.123.123.123:1111 for created ChromeDriver|
 
 # Setup and configure email service
 Current implementation is able to use gmail as an smtp service. This possibility could be used for getting status of current execution, etc.
