@@ -78,6 +78,7 @@ public class InstaActor2 implements Runnable, Actor {
     private PostType currentPostType = PostType.UNDEFINED;
     private boolean currentPostLikeAdded = false;
     private int totalLiked = 0;
+    private String proxyValue = "";
 
     private String addedComment = "";
     private String currentStatus = "";
@@ -139,6 +140,8 @@ public class InstaActor2 implements Runnable, Actor {
             repeatActionsAfterComplete = Boolean.parseBoolean(actorProperties.getProperty("service.repeat"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("sleep.duration")))
             sleepDurationBetweenRunsInHours = Integer.parseInt(actorProperties.getProperty("sleep.duration"));
+        if(!StringUtils.isEmpty(actorProperties.getProperty("proxy")))
+            proxyValue = actorProperties.getProperty("proxy");
     }
 
     private void sendEmailMessage(String message){
@@ -191,6 +194,16 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void initDriver(boolean debug) {
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
+                UnexpectedAlertBehaviour.IGNORE);
+        chromeOptions.setHeadless(true);
+        chromeOptions.addArguments("--no-sandbox");
+        chromeOptions.addArguments("--enable-automation");
+        if(!StringUtils.isEmpty(proxyValue))
+            chromeOptions.addArguments("--proxy-server=" +  proxyValue);
+
         if(!debug) {
             String seleniumHub = System.getenv("HUB_HOST");
             String seleniumHubPort = System.getenv("HUB_PORT");
@@ -205,12 +218,6 @@ public class InstaActor2 implements Runnable, Actor {
                 stop();
             }
             try {
-                ChromeOptions chromeOptions = new ChromeOptions();
-                chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
-                        UnexpectedAlertBehaviour.IGNORE);
-                chromeOptions.setHeadless(true);
-                chromeOptions.addArguments("--no-sandbox");
-                chromeOptions.addArguments("--enable-automation");
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
             } catch (MalformedURLException e) {
                 logger.error(getNameForLog() + "!!!Can't init DRIVER");
@@ -219,14 +226,7 @@ public class InstaActor2 implements Runnable, Actor {
             }
         }
         else {
-            ChromeOptions chromeOptions = new ChromeOptions();
-
-            chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
-                    UnexpectedAlertBehaviour.IGNORE);
             chromeOptions.setHeadless(false);
-            chromeOptions.addArguments("--no-sandbox");
-            chromeOptions.addArguments("--enable-automation");
-
             driver = new ChromeDriver(chromeOptions);
         }
         WebDriverRunner.setWebDriver(driver);
