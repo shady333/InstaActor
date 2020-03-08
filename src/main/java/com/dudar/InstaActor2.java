@@ -686,9 +686,6 @@ public class InstaActor2 implements Runnable, Actor {
                     int tagsCollectionSize = allTags.size();
                     AtomicInteger tagCounter = new AtomicInteger(1);
                     int reactionsCounter = 0;
-
-                    followSuggestedAccounts();
-
                     for (String searchTag : allTags) {
                         processedPosts.put(searchTag, new ArrayList());
                         if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
@@ -715,6 +712,7 @@ public class InstaActor2 implements Runnable, Actor {
                             }
                         }
                     }
+                    followSuggestedAccounts();
                     isCompleted = true;
                     logger.info(getStatus());
                 }
