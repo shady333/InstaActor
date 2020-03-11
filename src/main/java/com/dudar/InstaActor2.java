@@ -804,18 +804,19 @@ public class InstaActor2 implements Runnable, Actor {
                 logger.info(getNameForLog() + "follow account");
                 try {
                     mouseMoveToElementAndClick(followButtons.get(0));
+                    waitSomeTime(getRandomViewTimeout());
+                    if(InstaActorElements.getActionBlockedDialog()!=null){
+                        logger.info(getNameForLog() + "Action Blocked dialog");
+                        $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
+                        waitSomeTime(getRandomViewTimeout());
+                        return;
+                    }
+                    followedCount++;
                 }
                 catch (ElementClickInterceptedException ex){
                     logger.debug(getNameForLog() + "Can't click at follow button");
                 }
-                waitSomeTime(getRandomViewTimeout());
-                if(InstaActorElements.getActionBlockedDialog()!=null){
-                    logger.info(getNameForLog() + "Action Blocked dialog");
-                    $(By.xpath("//div[attribute::role='dialog']//button[contains(text(),\"Report a Problem\")]")).click();
-                    waitSomeTime(getRandomViewTimeout());
-                    return;
-                }
-                followedCount++;
+
             }
             waitSomeTime(getRandomViewTimeout());
         }
