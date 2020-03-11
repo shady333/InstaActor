@@ -78,6 +78,7 @@ public class InstaActor2 implements Runnable, Actor {
     private PostType currentPostType = PostType.UNDEFINED;
     private boolean currentPostLikeAdded = false;
     private int totalLiked = 0;
+    private int followedCount = 0;
     private String proxyValue = "";
 
     private String addedComment = "";
@@ -532,8 +533,8 @@ public class InstaActor2 implements Runnable, Actor {
                 logger.info(getNameForLog() + "Comment added: " + commentText);
                 totalComments++;
                 addedComment = commentText;
+                commentedPosts.add(currentPostUrl);
             }
-            commentedPosts.add(currentPostUrl);
         } catch (Error err) {
             logger.error(getNameForLog() + "ERROR on commenting" + err.getLocalizedMessage());
         }
@@ -799,15 +800,14 @@ public class InstaActor2 implements Runnable, Actor {
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
         int maxItems = (followButtons.size()>5)?5:followButtons.size();
         for(int i=0; i<maxItems; i++){
-            waitSomeTime(getRandomViewTimeout());
             if(followButtons.get(0).is(Condition.visible)){
                 logger.info(getNameForLog() + "follow account");
-                //try{
-                //    followButtons.get(0).click();
-                //}
-                //catch(AssertionError err){
-                    executeJavaScript("arguments[0].click()", followButtons.get(0));
-                //}
+                try {
+                    mouseMoveToElementAndClick(followButtons.get(0));
+                }
+                catch (ElementClickInterceptedException ex){
+                    logger.debug(getNameForLog() + "Can't click at follow button");
+                }
                 waitSomeTime(getRandomViewTimeout());
                 if(InstaActorElements.getActionBlockedDialog()!=null){
                     logger.info(getNameForLog() + "Action Blocked dialog");
@@ -815,6 +815,7 @@ public class InstaActor2 implements Runnable, Actor {
                     waitSomeTime(getRandomViewTimeout());
                     return;
                 }
+                followedCount++;
             }
             waitSomeTime(getRandomViewTimeout());
         }
@@ -822,7 +823,6 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void clearSession(){
         try{
-            //isCompleted = false;
             writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
@@ -901,6 +901,7 @@ public class InstaActor2 implements Runnable, Actor {
         }
         status += "<p>Likes added Total: " + totalLiked;
         status += "<p>Comments added Total: " + totalComments;
+        status += "<p>Follow accounts Total: " + followedCount;
         return status;
     }
 
