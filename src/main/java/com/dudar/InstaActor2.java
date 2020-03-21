@@ -206,8 +206,8 @@ public class InstaActor2 implements Runnable, Actor {
             chromeOptions.addArguments("--proxy-server=" +  proxyValue);
 
         if(!debug) {
-            String seleniumHub = System.getenv("HUB_HOST");
-            String seleniumHubPort = System.getenv("HUB_PORT");
+            String seleniumHub = actorProperties.getProperty("hub.host");
+            String seleniumHubPort = actorProperties.getProperty("hub.port");
             if(Strings.isNullOrEmpty(seleniumHub) || Strings.isNullOrEmpty(seleniumHubPort)){
                 seleniumHub = "localhost";
                 seleniumHubPort = "4444";
