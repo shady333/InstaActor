@@ -1,3 +1,4 @@
+#!/bin/bash
 #InstaActor sh script
 trap ctrl_c INT
 
