@@ -121,7 +121,7 @@ public class ActorsManager {
                         catch (Exception ex){
                             ;
                         }
-                        logger.info("Satrted Actor - " + action.getKey());
+                        logger.info("Start Actor - " + action.getKey());
                     }
                     else
                         logger.info(action.getKey() + " is running");
@@ -187,7 +187,7 @@ public class ActorsManager {
         actorsMap.entrySet().forEach(entry->{
             proceedAction(new AbstractMap.SimpleEntry<>(entry.getKey(), ActorActions.START));
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.MINUTES.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

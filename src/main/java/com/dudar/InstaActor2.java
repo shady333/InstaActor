@@ -23,6 +23,9 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -86,6 +89,7 @@ public class InstaActor2 implements Runnable, Actor {
     private boolean interrupted = false;
     private boolean emailServiceEnabled = false;
     private Properties actorProperties;
+    private boolean nightMode = false;
 
     private int sleepDurationBetweenRunsInHours = 2;
 
@@ -143,6 +147,8 @@ public class InstaActor2 implements Runnable, Actor {
             sleepDurationBetweenRunsInHours = Integer.parseInt(actorProperties.getProperty("sleep.duration"));
         if(!StringUtils.isEmpty(actorProperties.getProperty("proxy")))
             proxyValue = actorProperties.getProperty("proxy");
+        if(!StringUtils.isEmpty(actorProperties.getProperty("night.mode")))
+            nightMode = Boolean.parseBoolean(actorProperties.getProperty("night.mode"));
     }
 
     private void sendEmailMessage(String message){
@@ -637,6 +643,19 @@ public class InstaActor2 implements Runnable, Actor {
     public void run() {
         running.set(true);
         while (running.get()) {
+            if(nightMode){
+                try{
+                    while(isNowTimeBetweenLimits("10:00:00", "23:00:00"))
+                    {
+                        logger.info(getNameForLog() + "Sleep time");
+                        waitSomeTime(1*3600000);
+                    }
+                }
+                catch (ParseException ex){
+                    ;
+                }
+            }
+
             sendEmailMessage(viewCurrentParameters().replaceAll("\n", "<br/>"));
             interrupted = false;
             commentedPosts.addAll(Utilities.getAllTags(getCommentedPostsFilePath()));
@@ -679,48 +698,12 @@ public class InstaActor2 implements Runnable, Actor {
                     break;
                 }
                 try {
-                    initDriver(debugMode);
-                    authenticate();
-                    checkIfPopupShown();
-                    Collections.shuffle(allTags);
-                    logger.debug(getNameForLog() + "Shuffled Tags: " + allTags);
-                    int tagsCollectionSize = allTags.size();
-                    AtomicInteger tagCounter = new AtomicInteger(1);
-                    int reactionsCounter = 0;
-                    for (String searchTag : allTags) {
-                        processedPosts.put(searchTag, new ArrayList());
-                        if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
-                            followAccountFromYourFeed();
-                            reactionsCounter = 0;
-                        }
-                        reactionsCounter++;
-                        if (!completedTags.contains(searchTag)) {
-                            completedTags.add(searchTag);
-                            logger.info(getNameForLog() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
-                            tagCounter.getAndIncrement();
-                            if (searchByTag(searchTag)) {
-                                interactWithPosts(randomPostsCountValue());
-                                if (!interrupted) {
-                                    WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
-                                    mouseMoveToElementAndClick(closeButton);
-                                } else {
-                                    break;
-                                }
-                            }
-                            else{
-                                logger.info("Can't find postst for tag - " + searchTag);
-                                defectedTags.add(searchTag);
-                            }
-                        }
-                    }
-                    followSuggestedAccounts();
-                    isCompleted = true;
-                    logger.info(getStatus());
+                    magicWorker();
                 }
-                catch (AssertionError err){
-                    logger.info("Selenide error: " + err.getMessage());
-                    sendEmailMessage(getNameForLog() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
-                }
+//                catch (AssertionError err){
+//                    logger.info("Selenide error: " + err.getMessage());
+//                    sendEmailMessage(getNameForLog() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
+//                }
                 catch (InstaActorStopExecutionException ex) {
                     String message = getNameForLog() + "Execution stopped!!!";
                     logger.info(message);
@@ -748,6 +731,74 @@ public class InstaActor2 implements Runnable, Actor {
             endTime = LocalDateTime.now();
 
         }
+    }
+
+    private boolean isNowTimeBetweenLimits(String startTime, String endTime) throws ParseException {
+        String string1 = startTime;
+        Date time1 = new SimpleDateFormat("HH:mm:ss").parse(string1);
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.setTime(time1);
+        calendar1.add(Calendar.DATE, 1);
+
+
+        String string2 = endTime;
+        Date time2 = new SimpleDateFormat("HH:mm:ss").parse(string2);
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.setTime(time2);
+        calendar2.add(Calendar.DATE, 1);
+
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        Date current = new Date();
+        Date d = new SimpleDateFormat("HH:mm:ss").parse(formatter.format(current));
+        Calendar calendar3 = Calendar.getInstance();
+        calendar3.setTime(d);
+        calendar3.add(Calendar.DATE, 1);
+
+        Date x = calendar3.getTime();
+        if (x.after(calendar1.getTime()) && x.before(calendar2.getTime())) {
+            return true;
+        }
+        return false;
+    }
+
+    private void magicWorker() throws InstaActorStopExecutionException {
+        initDriver(debugMode);
+        authenticate();
+        checkIfPopupShown();
+        Collections.shuffle(allTags);
+        logger.debug(getNameForLog() + "Shuffled Tags: " + allTags);
+        int tagsCollectionSize = allTags.size();
+        AtomicInteger tagCounter = new AtomicInteger(1);
+        int reactionsCounter = 0;
+        for (String searchTag : allTags) {
+            processedPosts.put(searchTag, new ArrayList());
+            if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
+                followAccountFromYourFeed();
+                reactionsCounter = 0;
+            }
+            reactionsCounter++;
+            if (!completedTags.contains(searchTag)) {
+                completedTags.add(searchTag);
+                logger.info(getNameForLog() + "Current tag is " + tagCounter + " from " + tagsCollectionSize + " all of Tags");
+                tagCounter.getAndIncrement();
+                if (searchByTag(searchTag)) {
+                    interactWithPosts(randomPostsCountValue());
+                    if (!interrupted) {
+                        WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+                        mouseMoveToElementAndClick(closeButton);
+                    } else {
+                        break;
+                    }
+                }
+                else{
+                    logger.info("Can't find postst for tag - " + searchTag);
+                    defectedTags.add(searchTag);
+                }
+            }
+        }
+        followSuggestedAccounts();
+        isCompleted = true;
+        logger.info(getStatus());
     }
 
     private void initTagsFromFile() {
