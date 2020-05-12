@@ -58,7 +58,7 @@ public class InstaActorComments {
             "Get my like"
     ));
 
-    public static String generateComment(InstaActor2.PostType postType){
+    public static String generateComment(PostType postType){
 
         //TODO add emojji support
         //Commented part for posting emojji, not working yet
@@ -72,7 +72,7 @@ public class InstaActorComments {
             return comments.get(commentIndex);
         }
         else{
-            if(postType == InstaActor2.PostType.VIDEO){
+            if(postType == PostType.VIDEO){
                 logger.info("Return Video comment");
                 return commentsVideo.get(ThreadLocalRandom.current().nextInt(0, commentsVideo.size()));
             }

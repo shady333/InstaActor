@@ -8,6 +8,8 @@ You can use application on your own risk and responsibility.
 
 ## Requirements:
 * Docker installed (Memory 6GiB, Swap 2GiB);
+* Docker-compose installed;
+* Maven;
 * JDK 1.8;
 * Luck and :raised_hands: from the right place :monkey:
 
@@ -30,6 +32,10 @@ You can use application on your own risk and responsibility.
 
 ## Run service as a java process
 4. Execute "__runAll.sh__" file.
+```
+sh runAll.sh
+bash runAll.sh
+```
 5. Keep watching to the console output or use email service commands for interaction (if enabled and configured).
 6. To Stop execution - stop the process "Ctrl+C".
 

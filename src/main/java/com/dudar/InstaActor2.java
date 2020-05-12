@@ -23,7 +23,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -34,21 +33,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.Condition.disappears;
 import static com.codeborne.selenide.Selenide.*;
 
 public class InstaActor2 implements Runnable, Actor {
 
-    private boolean detectMediaContant = false;
+    public static final String START_TIME = "10:00:00";
+    public static final String END_TIME = "23:00:00";
+    //    private boolean detectMediaContant = false;
     private int crashCounter = 0;
 
     private AtomicBoolean running = new AtomicBoolean(false);
-
-    enum PostType{
-        PHOTO,
-        VIDEO,
-        GALLERY,
-        UNDEFINED
-    }
 
     private Map<String, ArrayList> processedPosts = new HashMap<>();
 
@@ -62,16 +57,6 @@ public class InstaActor2 implements Runnable, Actor {
     private boolean sleepMode = false;
 
     final static Logger logger = Logger.getLogger(InstaActor2.class);
-    private int viewMinDalay;
-    private int viewMaxDelay;
-    private int viewMinDelayVideo;
-    private int viewMaxDelayVideo;
-    private int likesPercentage;
-    private int commentsPercentage;
-    private int maxPostsCount;
-    private String userName;
-    private String userPass;
-    private boolean debugMode = false;
     private List<String> completedTags = new ArrayList<>();
     private String currentTag = "";
     private List<String> defectedTags = new ArrayList<>();
@@ -82,83 +67,32 @@ public class InstaActor2 implements Runnable, Actor {
     private boolean currentPostLikeAdded = false;
     private int totalLiked = 0;
     private int followedCount = 0;
-    private String proxyValue = "";
-
     private String addedComment = "";
     private String currentStatus = "";
     private boolean interrupted = false;
-    private boolean emailServiceEnabled = false;
-    private Properties actorProperties;
-    private boolean nightMode = false;
-
-    private int sleepDurationBetweenRunsInHours = 2;
-
     private int totalComments = 0;
+    private InstaActorProperties actorProperties;
 
-    private boolean repeatActionsAfterComplete = false;
+    private long stopPoint = 0;
 
     public InstaActor2(String name, Properties properties, List<String> tags){
         this.name = name;
         creationDate = new Date();
         allTags = tags;
-        actorProperties = properties;
-        initValuesFromProperties();
     }
 
     private void initValuesFromProperties() {
-
-
-        try {
-            Properties prop = new Properties();
-            prop.load(new FileInputStream("data/" + name + "_user.properties"));
-            actorProperties = prop;
-        } catch (IOException e) {
-            logger.error(getNameForLog() + "Can't reinit properties from file");
-            e.printStackTrace();
-        }
-
-        if(!StringUtils.isEmpty(actorProperties.getProperty("view.min.delay")))
-            viewMinDalay = Integer.parseInt(actorProperties.getProperty("view.min.delay"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("view.max.delay")))
-            viewMaxDelay = Integer.parseInt(actorProperties.getProperty("view.max.delay"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("video.min.delay")))
-            viewMinDelayVideo = Integer.parseInt(actorProperties.getProperty("video.min.delay"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("video.max.delay")))
-            viewMaxDelayVideo = Integer.parseInt(actorProperties.getProperty("video.max.delay"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("likes.percentage")))
-            likesPercentage = Integer.parseInt(actorProperties.getProperty("likes.percentage"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("comments.percentage")))
-            commentsPercentage = Integer.parseInt(actorProperties.getProperty("comments.percentage"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("posts.count")))
-            maxPostsCount = Integer.parseInt(actorProperties.getProperty("posts.count"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("acc.user")))
-            userName = actorProperties.getProperty("acc.user");
-        if(!StringUtils.isEmpty(actorProperties.getProperty("acc.password")))
-            userPass = actorProperties.getProperty("acc.password");
-        if(!StringUtils.isEmpty(actorProperties.getProperty("debug.mode")))
-            debugMode = Boolean.parseBoolean(actorProperties.getProperty("debug.mode"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("detect.media.content")))
-            detectMediaContant = Boolean.parseBoolean(actorProperties.getProperty("detect.media.content"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("email.service")))
-            emailServiceEnabled = Boolean.parseBoolean(actorProperties.getProperty("email.service"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("service.repeat")))
-            repeatActionsAfterComplete = Boolean.parseBoolean(actorProperties.getProperty("service.repeat"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("sleep.duration")))
-            sleepDurationBetweenRunsInHours = Integer.parseInt(actorProperties.getProperty("sleep.duration"));
-        if(!StringUtils.isEmpty(actorProperties.getProperty("proxy")))
-            proxyValue = actorProperties.getProperty("proxy");
-        if(!StringUtils.isEmpty(actorProperties.getProperty("night.mode")))
-            nightMode = Boolean.parseBoolean(actorProperties.getProperty("night.mode"));
+        actorProperties = new InstaActorProperties(name);
     }
 
     private void sendEmailMessage(String message){
-        if(emailServiceEnabled){
+        if(actorProperties.isEmailServiceEnabled()){
             EmailService.generateAndSendEmail(message);
         }
     }
 
     private void sendEmailMessage(String message, String filePath){
-        if(emailServiceEnabled){
+        if(actorProperties.isEmailServiceEnabled()){
             EmailService.generateAndSendEmail(message, filePath);
         }
     }
@@ -208,12 +142,12 @@ public class InstaActor2 implements Runnable, Actor {
         chromeOptions.setHeadless(true);
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--enable-automation");
-        if(!StringUtils.isEmpty(proxyValue))
-            chromeOptions.addArguments("--proxy-server=" +  proxyValue);
+        if(!StringUtils.isEmpty(actorProperties.getProxyValue()))
+            chromeOptions.addArguments("--proxy-server=" +  actorProperties.getProxyValue());
 
         if(!debug) {
-            String seleniumHub = actorProperties.getProperty("hub.host");
-            String seleniumHubPort = actorProperties.getProperty("hub.port");
+            String seleniumHub = actorProperties.getHub();
+            String seleniumHubPort = String.valueOf(actorProperties.getHubPort());
             if(Strings.isNullOrEmpty(seleniumHub) || Strings.isNullOrEmpty(seleniumHubPort)){
                 seleniumHub = "localhost";
                 seleniumHubPort = "4444";
@@ -242,22 +176,20 @@ public class InstaActor2 implements Runnable, Actor {
     private void authenticate() throws InstaActorStopExecutionException {
         open("https://www.instagram.com/accounts/login/?source=auth_switcher");
         sleep(getRandomViewTimeout());
-        InstaActorElements.getUserLoginInput().val(userName).pressTab();
-        InstaActorElements.getUserPasswordInput().val(userPass).pressEnter();
-        sleep(10000);
-
-
-
+        enterloginAndPassword();
         if(suspectedActionsDetectorAfterLogin())
             logger.warn("Can't login!!!");
-
         if($$(By.xpath("//button[contains(.,'Send Security Code')]")).size() > 0){
             logger.error("Can't login to account");
             throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN SECURITY CODE");
-        } else if ($$(By.xpath("//button[contains(.,'Log In')]")).size() > 0) {
-            logger.error("Can't login to account");
-            throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN ERROR");
         }
+    }
+
+    private void enterloginAndPassword() {
+        InstaActorElements.getUserLoginInput().val(actorProperties.getUserName()).pressTab();
+        InstaActorElements.getUserPasswordInput().val(actorProperties.getUserPass()).pressEnter();
+        $(By.xpath("//button[contains(.,'Log In')]")).waitUntil(disappears, 10000);
+        sleep(3000);
     }
 
     private void waitTillPageLoadedAndSearchAvailable(){
@@ -279,7 +211,6 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void waitSomeTime(int duration){
         long currentPoint = System.currentTimeMillis();
-
         while(System.currentTimeMillis() < (currentPoint + duration)){
             logger.debug(getNameForLog() + "Sleep duration - " + duration/1000 + " seconds.\n"
                 + ((currentPoint + duration) - System.currentTimeMillis())/1000 + " seconds left.");
@@ -311,15 +242,14 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private int getRandomViewTimeout(){
-        return ThreadLocalRandom.current().nextInt(viewMinDalay, viewMaxDelay + 1);
+        return ThreadLocalRandom.current().nextInt(actorProperties.getViewMinDelay(), actorProperties.getViewMaxDelay() + 1);
     }
 
     private int getVideoRandonTimeout(){
-        return ThreadLocalRandom.current().nextInt(viewMinDelayVideo, viewMaxDelayVideo + 1);
+        return ThreadLocalRandom.current().nextInt(actorProperties.getViewMinDelayVideo(), actorProperties.getViewMaxDelayVideo() + 1);
     }
 
     private void mouseMoveToElementAndClick(WebElement element){
-        //sleep(getRandomViewTimeout());
         Actions action = new Actions(WebDriverRunner.getWebDriver());
         action.moveToElement(element).perform();
         element.click();
@@ -327,28 +257,33 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private boolean searchByTag(String searchTag) {
-        SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
-        mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
-        searchBox.val("#"+searchTag);
-        $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
+        try {
+            SelenideElement searchBox = $(By.cssSelector("input[placeholder=\"Search\"]")).shouldBe(Condition.visible);
+            mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
+            searchBox.val("#" + searchTag);
+            $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
 
-        if($$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).size()>0){
-            $$(By.xpath("//a[attribute::href=\"/explore/tags/"+searchTag+"/\"]//span[contains(.,\""+searchTag+"\")]")).get(0).click();
+            if ($$(By.xpath("//a[attribute::href=\"/explore/tags/" + searchTag + "/\"]//span[contains(.,\"" + searchTag + "\")]")).size() > 0) {
+                $$(By.xpath("//a[attribute::href=\"/explore/tags/" + searchTag + "/\"]//span[contains(.,\"" + searchTag + "\")]")).get(0).click();
+            }
+            sleep(5000);
+            $(By.xpath("//div[contains(text(),'Top posts')]")).waitUntil(Condition.visible, 10000);
+            SelenideElement tagLocator = null;
+            if ($$(By.cssSelector("main h1")).size() > 0) {
+                tagLocator = $$(By.cssSelector("main h1")).get(0);
+            }
+            if (tagLocator != null && tagLocator.getText().equalsIgnoreCase("#" + searchTag)) {
+                logger.info(getNameForLog() + "Current page Tag - " + tagLocator.getText());
+                currentTag = searchTag;
+                return true;
+            } else {
+                System.out.println("!!! Can't find  search tag page. Search Tag - " + searchTag);
+                defectedTags.add(searchTag);
+                return false;
+            }
         }
-        sleep(5000);
-        $(By.xpath("//div[contains(text(),'Top posts')]")).waitUntil(Condition.visible, 10000);
-        SelenideElement tagLocator = null;
-        if($$(By.cssSelector("main h1")).size() > 0){
-            tagLocator = $$(By.cssSelector("main h1")).get(0);
-        }
-        if(tagLocator != null && tagLocator.getText().equalsIgnoreCase("#"+searchTag)){
-            logger.info(getNameForLog()  + "Current page Tag - "+tagLocator.getText());
-            currentTag = searchTag;
-            return true;
-        }
-        else{
-            System.out.println("!!! Can't find  search tag page. Search Tag - "+searchTag);
-            defectedTags.add(searchTag);
+        catch (com.codeborne.selenide.ex.ElementNotFound err){
+            logger.error(getNameForLog() + "Failed on search.");
             return false;
         }
     }
@@ -357,7 +292,7 @@ public class InstaActor2 implements Runnable, Actor {
         ElementsCollection imagePost = $$(By.xpath("//div[attribute::role='dialog']//article//img[attribute::style='object-fit: cover;']"));
         if(imagePost.size()>0){
             if(imagePost.size()==1){
-                if(detectMediaContant){
+                if(actorProperties.isDetectMediaContent()){
                     try {
                         String imageUrl = imagePost.get(0).getAttribute("srcset").split(" ")[0];
                         URL imageURL = new URL(imageUrl);
@@ -366,7 +301,7 @@ public class InstaActor2 implements Runnable, Actor {
                         ImageIO.write(saveImage, "jpg", new File(savedImagePath));
 
                         //TODO Image Recognition
-                        if(detectMediaContant)
+                        if(actorProperties.isDetectMediaContent())
                             ImageAnalyzer.imageType(savedImagePath);
 
                     } catch (MalformedURLException e) {
@@ -408,12 +343,10 @@ public class InstaActor2 implements Runnable, Actor {
     private boolean shouldLikePost(){
         int min = 1;
         int max = 100;
-        boolean result;
-        if(ThreadLocalRandom.current().nextInt(min, max) <= likesPercentage) {
-            result = true;
-        }
-        else {
-            result = false;
+        boolean result = false;
+        if(ThreadLocalRandom.current().nextInt(min, max) <= actorProperties.getLikesPercentage()) {
+            if(System.currentTimeMillis() > stopPoint + actorProperties.getActionPauseDurationHours()*3600000)
+                result = true;
         }
         return result;
     }
@@ -424,8 +357,8 @@ public class InstaActor2 implements Runnable, Actor {
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
             if(suspectedActionsDetectorOnAction()){
                 logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
-                likesPercentage = 0;
-                commentsPercentage = 0;
+                disableLikeAction();
+                disableCommentsAction();
                 resetCurrentPostStatus();
             }
             else{
@@ -446,22 +379,22 @@ public class InstaActor2 implements Runnable, Actor {
 
     public void enableLikeAction(){
         logger.info(getNameForLog() + "ENABLE LIKE ACTION");
-        likesPercentage = 90;
+        actorProperties.setLikesPercentage(90);
     }
 
     public void disableLikeAction(){
         logger.info(getNameForLog() + "DISABLE LIKE ACTION");
-        likesPercentage = 0;
+        actorProperties.setLikesPercentage(0);
     }
 
     public void enableCommentsAction(){
         logger.info(getNameForLog() + "ENABLE COMMENTS ACTION");
-        commentsPercentage = 90;
+        actorProperties.setCommentsPercentage(90);
     }
 
     public void disableCommentsAction(){
         logger.info(getNameForLog() + "DISABLE COMMENTS ACTION");
-        commentsPercentage = 0;
+        actorProperties.setCommentsPercentage(0);
     }
 
     private boolean suspectedActionsDetectorOnAction() {
@@ -473,7 +406,8 @@ public class InstaActor2 implements Runnable, Actor {
                         +"<b>Tag name:</b> " + currentTag + "<br/>"
                         +"<b>Post Url:</b> " + currentPostUrl + "<br/>", screenshot("tmp/crash/chash_info.png"));
                 buttonReport.get(0).click();
-                sleep(60000);
+                sleep(20000);
+                stopPoint = System.currentTimeMillis();
                 return true;
         }
         return false;
@@ -515,7 +449,7 @@ public class InstaActor2 implements Runnable, Actor {
         int min = 1;
         int max = 100;
         boolean result = false;
-        if(ThreadLocalRandom.current().nextInt(min, max) <= commentsPercentage) {
+        if(ThreadLocalRandom.current().nextInt(min, max) <= actorProperties.getCommentsPercentage()) {
             logger.info(getNameForLog() + "Add Comment");
             result = true;
         }
@@ -524,25 +458,25 @@ public class InstaActor2 implements Runnable, Actor {
 
     private void addCommentToPost(){
         //TODO Post comment according to image type
-        try {
-            String commentText = InstaActorComments.generateComment(currentPostType);
-            logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
-            $(By.cssSelector("article textarea")).val(commentText);
-            mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-            if(suspectedActionsDetectorOnAction()) {
-                logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
-                likesPercentage = 0;
-                commentsPercentage = 0;
-                resetCurrentPostStatus();
+        if(System.currentTimeMillis() > stopPoint + actorProperties.getActionPauseDurationHours()*3600000) {
+            try {
+                String commentText = InstaActorComments.generateComment(currentPostType);
+                logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
+                $(By.cssSelector("article textarea")).val(commentText);
+                mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
+                if (suspectedActionsDetectorOnAction()) {
+                    logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+                    disableCommentsAction();
+                    resetCurrentPostStatus();
+                } else {
+                    logger.info(getNameForLog() + "Comment added: " + commentText);
+                    totalComments++;
+                    addedComment = commentText;
+                    commentedPosts.add(currentPostUrl);
+                }
+            } catch (Error err) {
+                logger.error(getNameForLog() + "ERROR on commenting" + err.getLocalizedMessage());
             }
-            else{
-                logger.info(getNameForLog() + "Comment added: " + commentText);
-                totalComments++;
-                addedComment = commentText;
-                commentedPosts.add(currentPostUrl);
-            }
-        } catch (Error err) {
-            logger.error(getNameForLog() + "ERROR on commenting" + err.getLocalizedMessage());
         }
     }
 
@@ -559,7 +493,6 @@ public class InstaActor2 implements Runnable, Actor {
             currentPostUrl = WebDriverRunner.url();
             InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
             if(InstaActorElements.getPostLikeButton()!=null){
-
                 if(processedPosts.get(currentTag).contains(currentPostUrl)){
                     logger.info(getNameForLog() + "Post was already processed");
                     logger.info(getNameForLog() + "SKIP - " + currentPostUrl);
@@ -608,7 +541,7 @@ public class InstaActor2 implements Runnable, Actor {
         currentStatus += "|   Tags count: " + allTags.size() + ".\n";
         currentStatus += "|   Completed Tags: " + completedTags.size() + ".\n";
         currentStatus += "|   Defected Tags: " + defectedTags.size() + ".\n";
-        currentStatus += "|   Number is " + currentPostPosition + " from " + maxPostsCount + ".\n";
+        currentStatus += "|   Number is " + currentPostPosition + " from " + actorProperties.getMaxPostsCount() + ".\n";
         currentStatus += "|   Url: " + currentPostUrl + ".\n";
         currentStatus += "|   Type: " + currentPostType.toString() + ".\n";
         currentStatus += "|   Like: " + currentPostLikeAdded + ".\n";
@@ -623,10 +556,12 @@ public class InstaActor2 implements Runnable, Actor {
         String currentStatus = "*****InstaActor Parameters*****\n"
                 + "Name - " + name + "\n"
                 + "Active - " + isActive() + "\n"
-                + "Like percentage - " + likesPercentage + "\n"
-                + "Comment percentage - " + commentsPercentage +"\n"
-                + "View parameters: " + viewMinDalay + " " + viewMaxDelay + "\n"
-                + "Video parameters: " + viewMinDelayVideo + " " + viewMaxDelayVideo + "\n"
+                + "Like percentage - " + actorProperties.getLikesPercentage() + "\n"
+                + "Comment percentage - " + actorProperties.getCommentsPercentage() +"\n"
+                + "View parameters: " + actorProperties.getViewMinDelay()
+                    + " " + actorProperties.getViewMaxDelay() + "\n"
+                + "Video parameters: " + actorProperties.getViewMinDelayVideo()
+                    + " " + actorProperties.getViewMaxDelayVideo() + "\n"
                 + "*****InstaActor Parameters*****";
         logger.info(currentStatus);
         return currentStatus;
@@ -635,17 +570,18 @@ public class InstaActor2 implements Runnable, Actor {
     private int executionCounter = 0;
 
     private int randomPostsCountValue(){
-        int values = (maxPostsCount > 10) ? (maxPostsCount-10) : 10;
-        return ThreadLocalRandom.current().nextInt(values, maxPostsCount + 10);
+        int values = (actorProperties.getMaxPostsCount() > 10) ? (actorProperties.getMaxPostsCount()-10) : 10;
+        return ThreadLocalRandom.current().nextInt(values, actorProperties.getMaxPostsCount() + 10);
     }
 
     @Override
     public void run() {
         running.set(true);
         while (running.get()) {
-            if(nightMode){
+            initValuesFromProperties();
+            if(actorProperties.isNightMode()){
                 try{
-                    while(isNowTimeBetweenLimits("10:00:00", "23:00:00"))
+                    while(isNowTimeBetweenLimits(START_TIME, END_TIME))
                     {
                         logger.info(getNameForLog() + "Sleep time");
                         waitSomeTime(1*3600000);
@@ -666,32 +602,13 @@ public class InstaActor2 implements Runnable, Actor {
             likedPosts = likedPosts.stream()
                     .distinct()
                     .collect(Collectors.toList());
-            initValuesFromProperties();
             initTagsFromFile();
             if (isCompleted) {
-                logger.info(getNameForLog() + "All tags were processed");
-                String message = getNameForLog() + " execution completed.</br>";
-                sendEmailMessage(message + generateStatusForEmail());
-                if(repeatActionsAfterComplete){
-                    executionCounter++;
-                    interrupted = false;
-                    isCompleted = false;
-                    crashCounter = 0;
-                    completedTags = new ArrayList<>();
-                    sleepMode = true;
-                    waitSomeTime(sleepDurationBetweenRunsInHours*3600000);
-                    sleepMode = false;
-                    startTime = LocalDateTime.now();
-                    endTime = null;
-                }
-                else {
-                    stopExecution();
-                }
+                sleepAfterCompletion();
             }
             while (!isCompleted & !isStopped) {
                 if (crashCounter > 10) {
                     stopExecution();
-                    //clearSession();
                     sendEmailMessage("CrashCounter exceed max value for - <b>" + name
                             + "</b><p>Stop execution.<p>"+generateStatusForEmail());
                     crashCounter = 0;
@@ -700,10 +617,6 @@ public class InstaActor2 implements Runnable, Actor {
                 try {
                     magicWorker();
                 }
-//                catch (AssertionError err){
-//                    logger.info("Selenide error: " + err.getMessage());
-//                    sendEmailMessage(getNameForLog() + "SELENIDE Assert Error: " + err.getMessage(), screenshot("tmp/crash/assert_error_info.png"));
-//                }
                 catch (InstaActorStopExecutionException ex) {
                     String message = getNameForLog() + "Execution stopped!!!";
                     logger.info(message);
@@ -727,9 +640,28 @@ public class InstaActor2 implements Runnable, Actor {
                     clearSession();
                 }
             }
-
             endTime = LocalDateTime.now();
+        }
+    }
 
+    private void sleepAfterCompletion() {
+        logger.info(getNameForLog() + "All tags were processed");
+        String message = getNameForLog() + " execution completed.</br>";
+        sendEmailMessage(message + generateStatusForEmail());
+        if(actorProperties.isRepeatActionsAfterComplete()){
+            executionCounter++;
+            interrupted = false;
+            isCompleted = false;
+            crashCounter = 0;
+            completedTags = new ArrayList<>();
+            sleepMode = true;
+            waitSomeTime(actorProperties.getSleepDurationBetweenRunsInHours()*3600000);
+            sleepMode = false;
+            startTime = LocalDateTime.now();
+            endTime = null;
+        }
+        else {
+            stopExecution();
         }
     }
 
@@ -739,21 +671,17 @@ public class InstaActor2 implements Runnable, Actor {
         Calendar calendar1 = Calendar.getInstance();
         calendar1.setTime(time1);
         calendar1.add(Calendar.DATE, 1);
-
-
         String string2 = endTime;
         Date time2 = new SimpleDateFormat("HH:mm:ss").parse(string2);
         Calendar calendar2 = Calendar.getInstance();
         calendar2.setTime(time2);
         calendar2.add(Calendar.DATE, 1);
-
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
         Date current = new Date();
         Date d = new SimpleDateFormat("HH:mm:ss").parse(formatter.format(current));
         Calendar calendar3 = Calendar.getInstance();
         calendar3.setTime(d);
         calendar3.add(Calendar.DATE, 1);
-
         Date x = calendar3.getTime();
         if (x.after(calendar1.getTime()) && x.before(calendar2.getTime())) {
             return true;
@@ -762,7 +690,7 @@ public class InstaActor2 implements Runnable, Actor {
     }
 
     private void magicWorker() throws InstaActorStopExecutionException {
-        initDriver(debugMode);
+        initDriver(actorProperties.isDebugMode());
         authenticate();
         checkIfPopupShown();
         Collections.shuffle(allTags);
@@ -867,7 +795,6 @@ public class InstaActor2 implements Runnable, Actor {
                 catch (ElementClickInterceptedException ex){
                     logger.debug(getNameForLog() + "Can't click at follow button");
                 }
-
             }
             waitSomeTime(getRandomViewTimeout());
         }
@@ -878,9 +805,7 @@ public class InstaActor2 implements Runnable, Actor {
             writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
-
             sleep(30000);
-
             logger.error(getNameForLog() + "Clear WebDriver session");
             closeWebDriver();
         }
@@ -940,8 +865,8 @@ public class InstaActor2 implements Runnable, Actor {
                 +"<p>Current(latest) duration (minutes): " + getExecutionDuration()
                 +"<p>Completed executions: " + executionCounter
                 +"<p>Was interrupted: " + interrupted
-                +"<p>Like percentage: " + likesPercentage + "%"
-                +"<p>Comments percentage: " + commentsPercentage + "%"
+                +"<p>Like percentage: " + actorProperties.getLikesPercentage() + "%"
+                +"<p>Comments percentage: " + actorProperties.getCommentsPercentage() + "%"
                 +"<p>Completed Tags: " + completedTags.size()
                 +"<p>Defected Tags: " + defectedTags.size()
                 +"<p>Tag: " + currentTag + " from " + allTags.size()

@@ -18,17 +18,26 @@ public class Runner {
 
     public static void main(String[] args) throws InterruptedException {
 
-        logger.info("Starting...");
         Date lastActionDate = new Date();
+        logger.info("Starting...");
         AbstractMap.SimpleEntry<String, ActorActions> currentAction;
-        if(args.length > 0){
-            if(args[0].equals("-Doption=START")){
-                ActorsManager.getInstance().initActorsFromDataFolder();
-                TimeUnit.SECONDS.sleep(5);
-                ActorsManager.getInstance().startAllRegistered();
+
+
+
+        try {
+            if (args.length > 0) {
+                if (args[0].equals("-Doption=START")) {
+                    ActorsManager.getInstance().initActorsFromDataFolder();
+                    TimeUnit.SECONDS.sleep(5);
+                    ActorsManager.getInstance().startAllRegistered();
+                }
             }
+            EmailService.generateAndSendEmail("InstaActor service is UP and running");
         }
-        EmailService.generateAndSendEmail("InstaActor service is UP and running");
+        catch (Exception ex){
+            ;
+        }
+
         while(true)
         {
             logger.debug("MAIN THREAD tick");
@@ -53,7 +62,7 @@ public class Runner {
                 logger.error("Exception in Runner - " + ex.getMessage());
             }
             finally {
-                TimeUnit.SECONDS.sleep(60);
+                TimeUnit.SECONDS.sleep(30);
             }
         }
     }
