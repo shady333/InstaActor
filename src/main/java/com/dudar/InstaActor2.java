@@ -581,7 +581,7 @@ public class InstaActor2 implements Runnable, Actor {
             initValuesFromProperties();
             if(actorProperties.isNightMode()){
                 try{
-                    while(isNowTimeBetweenLimits(START_TIME, END_TIME))
+                    while(Utilities.isNowTimeBetweenLimits(START_TIME, END_TIME))
                     {
                         logger.info(getNameForLog() + "Sleep time");
                         waitSomeTime(1*3600000);
@@ -665,29 +665,7 @@ public class InstaActor2 implements Runnable, Actor {
         }
     }
 
-    private boolean isNowTimeBetweenLimits(String startTime, String endTime) throws ParseException {
-        String string1 = startTime;
-        Date time1 = new SimpleDateFormat("HH:mm:ss").parse(string1);
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.setTime(time1);
-        calendar1.add(Calendar.DATE, 1);
-        String string2 = endTime;
-        Date time2 = new SimpleDateFormat("HH:mm:ss").parse(string2);
-        Calendar calendar2 = Calendar.getInstance();
-        calendar2.setTime(time2);
-        calendar2.add(Calendar.DATE, 1);
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-        Date current = new Date();
-        Date d = new SimpleDateFormat("HH:mm:ss").parse(formatter.format(current));
-        Calendar calendar3 = Calendar.getInstance();
-        calendar3.setTime(d);
-        calendar3.add(Calendar.DATE, 1);
-        Date x = calendar3.getTime();
-        if (x.after(calendar1.getTime()) && x.before(calendar2.getTime())) {
-            return true;
-        }
-        return false;
-    }
+
 
     private void magicWorker() throws InstaActorStopExecutionException {
         initDriver(actorProperties.isDebugMode());

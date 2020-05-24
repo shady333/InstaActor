@@ -20,13 +20,32 @@ public class Executor {
         AbstractMap.SimpleEntry<String, ActorActions> currentAction = null;
 
         Date lastActionDate = new Date();
+        boolean wasStopped = false;
 
         Controller controller = new Controller();
-        controller.registerActor("actor1");
-        controller.registerActor("actor2");
-        controller.registerActor("actor3");
+        controller.registerActor("3dprint");
+        TimeUnit.SECONDS.sleep(30);
+        controller.registerActor("bricks");
+        TimeUnit.SECONDS.sleep(30);
+        controller.registerActor("inline");
+        TimeUnit.SECONDS.sleep(30);
+        controller.registerActor("legomini");
+        TimeUnit.SECONDS.sleep(30);
+        controller.registerActor("neverold");
+        TimeUnit.SECONDS.sleep(30);
 
         while(true){
+            if(!Utilities.isInternetConnection()){
+                logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
+//                EmailService.generateAndSendEmail("STOPPING ALL ACTORS. Out of Internet connection.");
+                controller.stopAllActors();
+                wasStopped = true;
+            }
+            if(wasStopped && Utilities.isInternetConnection()){
+                controller.startAllActors();
+                wasStopped = false;
+            }
+
             logger.info("Tick from executor");
 
             try {

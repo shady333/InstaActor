@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class Controller implements IController {
 
@@ -20,7 +21,6 @@ public class Controller implements IController {
         registeredActors.add(actorInsta);
         Thread thread = new Thread(actorInsta);
         thread.start();
-
     }
 
     @Override
@@ -63,6 +63,42 @@ public class Controller implements IController {
     @Override
     public void createCopyController(IController controller) {
 
+    }
+
+    public void stopAllActors(){
+        registeredActors.forEach(item -> {
+            (item).stop();
+        });
+    }
+
+    public void startAllActors(){
+        registeredActors.stream()
+                .filter(item -> !item.isRunning())
+                .forEach(item -> {
+                            (new Thread((ActorInsta) item)).start();
+                            try {
+                                TimeUnit.SECONDS.sleep(30);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                );
+    }
+
+    public void startAllInterruptedActors(){
+        registeredActors.stream()
+                .filter(item -> !item.isRunning())
+                .forEach(item -> {
+                            if (((ActorInsta) item).wasInterrupted()) {
+                                (new Thread((ActorInsta) item)).start();
+                                try {
+                                    TimeUnit.SECONDS.sleep(30);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                );
     }
 
     public void getStatusOfActors(){

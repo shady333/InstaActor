@@ -1,6 +1,6 @@
 package com.dudar;
 
-enum PostType {
+public enum PostType {
     PHOTO,
     VIDEO,
     GALLERY,

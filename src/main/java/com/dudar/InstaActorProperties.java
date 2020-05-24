@@ -4,7 +4,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Properties;
 
 public class InstaActorProperties {
@@ -48,6 +50,10 @@ public class InstaActorProperties {
 
     public int getMaxPostsCount() {
         return maxPostsCount;
+    }
+
+    public void setMaxPostsCount(int postsCount) {
+        maxPostsCount = postsCount;
     }
 
     public String getUserName() {
@@ -111,6 +117,7 @@ public class InstaActorProperties {
     private String proxyValue;
     private boolean nightMode;
     private int pauseDurationWhileDetected;
+    private LocalDateTime actionBlockedTime;
 
     public InstaActorProperties(String actorName){
         Properties actorProperties;
@@ -160,6 +167,8 @@ public class InstaActorProperties {
 
             if(!StringUtils.isEmpty(actorProperties.getProperty("pause.duration")))
                 pauseDurationWhileDetected = Integer.parseInt(actorProperties.getProperty("pause.duration"));
+            if(!StringUtils.isEmpty(actorProperties.getProperty("block.time")))
+                actionBlockedTime = LocalDateTime.parse(actorProperties.getProperty("block.time"));
 
         } catch (IOException e) {
             logger.error("Can't reinit properties from file");
@@ -171,5 +180,21 @@ public class InstaActorProperties {
 
     public long getActionPauseDurationHours() {
         return pauseDurationWhileDetected;
+    }
+
+    public LocalDateTime getStopPoint() {
+        return actionBlockedTime;
+    }
+
+    public void setBlockActionPoint(String fileName, String value) {
+        Properties prop = new Properties();
+        String propFileName = "data/" + fileName + "_user.properties";
+        try {
+            prop.load(new FileInputStream(propFileName));
+            prop.setProperty("block.time", value);
+            prop.store(new FileOutputStream(propFileName), null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

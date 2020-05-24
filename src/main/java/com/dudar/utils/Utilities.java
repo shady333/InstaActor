@@ -5,15 +5,17 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import org.apache.log4j.Logger;
 
+import javax.mail.internet.InternetAddress;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.URLConnection;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Utilities {
@@ -151,6 +153,58 @@ public class Utilities {
     private static void getEmailPropertiesInstance() {
         if (emailProperties == null) {
             initEmailProperties();
+        }
+    }
+
+    public static void writeListToFile(List listName, String fileName){
+
+        try {
+            FileWriter writer = new FileWriter(fileName);
+            for(Object str : listName){
+                writer.write((String)str + ",");
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean isNowTimeBetweenLimits(String startTime, String endTime) throws ParseException {
+        String string1 = startTime;
+        Date time1 = new SimpleDateFormat("HH:mm:ss").parse(string1);
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.setTime(time1);
+        calendar1.add(Calendar.DATE, 1);
+        String string2 = endTime;
+        Date time2 = new SimpleDateFormat("HH:mm:ss").parse(string2);
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.setTime(time2);
+        calendar2.add(Calendar.DATE, 1);
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        Date current = new Date();
+        Date d = new SimpleDateFormat("HH:mm:ss").parse(formatter.format(current));
+        Calendar calendar3 = Calendar.getInstance();
+        calendar3.setTime(d);
+        calendar3.add(Calendar.DATE, 1);
+        Date x = calendar3.getTime();
+        if (x.after(calendar1.getTime()) && x.before(calendar2.getTime())) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isInternetConnection(){
+        try {
+            URL url = new URL("https://www.google.com/");
+            URLConnection connection = url.openConnection();
+            connection.connect();
+
+            System.out.println("Connection Successful");
+            return true;
+        }
+        catch (Exception e) {
+            System.out.println("Internet Not Connected");
+            return false;
         }
     }
 

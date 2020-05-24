@@ -12,6 +12,4 @@ public interface IActor {
 
     boolean isRunning();
 
-
-
 }
