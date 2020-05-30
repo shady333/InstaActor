@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class InstaActorProperties {
 
@@ -193,7 +194,21 @@ public class InstaActorProperties {
             prop.load(new FileInputStream(propFileName));
             prop.setProperty("block.time", value);
             prop.store(new FileOutputStream(propFileName), null);
-        } catch (IOException e) {
+            TimeUnit.SECONDS.sleep(10);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setNewPassword(String fileName, String value) {
+        Properties prop = new Properties();
+        String propFileName = "data/" + fileName + "_user.properties";
+        try {
+            prop.load(new FileInputStream(propFileName));
+            prop.setProperty("acc.password", value);
+            prop.store(new FileOutputStream(propFileName), null);
+            TimeUnit.SECONDS.sleep(10);
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }

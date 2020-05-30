@@ -63,4 +63,15 @@ public class InstaActorElements {
     }
 
 
+    public static SelenideElement getUserOldPassInput() {
+        return getControl("User Old Password input", By.name("old_password"));
+    }
+
+    public static SelenideElement getUserNewPassInput() {
+        return getControl("User New Password input", By.name("new_password1"));
+    }
+
+    public static SelenideElement getUserConfirmNewPassInput() {
+        return getControl("User New Password input", By.name("new_password2"));
+    }
 }

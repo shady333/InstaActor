@@ -1,6 +1,5 @@
 package phaseII;
 
-import com.dudar.runner.Runner;
 import com.dudar.utils.services.ActorActions;
 import org.apache.log4j.Logger;
 
@@ -8,10 +7,11 @@ import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Controller implements IController {
 
-    final static Logger logger = Logger.getLogger(Runner.class);
+    final static Logger logger = Logger.getLogger(Controller.class);
 
     private Set<IActor> registeredActors = new HashSet<>();
 
@@ -37,9 +37,23 @@ public class Controller implements IController {
                                 );
                     }
                     else{
-                        registeredActors.stream()
-                                .filter(item -> item.getName().equals(action.getKey()))
-                                .forEach(item -> (new Thread((ActorInsta)item)).start());
+                        AtomicBoolean registered = new AtomicBoolean(false);
+                        registeredActors.forEach(item -> {
+                            if(item.getName().equals(action.getKey())){
+                                registered.set(true);
+                            }
+                        });
+                        if(!registered.get())
+                        {
+                            registerActor(action.getKey());
+                        }
+                        else{
+                            //TODO make actor running
+//                            registeredActors.stream()
+//                                    .filter(item -> !item.isRunning())
+//                                    .forEach(item ->
+//                                            (new Thread((ActorInsta)item)).start());
+                        }
                     }
 
                     break;

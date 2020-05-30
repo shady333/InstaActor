@@ -84,8 +84,25 @@ public class ActorInsta implements IActor, Runnable {
 
     }
 
-    private void initPropertiesAndSetInitVariables() {
+    @Override
+    public boolean equals(Object obj) {
+        boolean result = false;
+        if (obj == null || obj.getClass() != getClass()) {
+            result = false;
+        } else {
+            ActorInsta actor = (ActorInsta) obj;
+            if(this.name == actor.getName())
+                result = true;
+        }
+        return result;
+    }
+
+    private void initProperties(){
         this.prop = new InstaActorProperties(this.name);
+    }
+
+    private void initPropertiesAndSetInitVariables() {
+        initProperties();
         allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
     }
 
@@ -159,12 +176,15 @@ public class ActorInsta implements IActor, Runnable {
 
                 someActions();
 
-                isCompleted = true;
-                executionCounter++;
                 followSuggestedAccounts();
-                endTime = LocalDateTime.now();
-                sendStatusAfterCompletion();
 
+                completeRun();
+
+            }
+            catch (InstaActorExecutionException ex){
+                if(ex.getMessage().contains("Like or Comment block")){
+                    completeRun();
+                }
             }
             catch (AssertionError err){
                 logger.error(getNameForLog() + " ASSERTION ERROR \n"
@@ -192,6 +212,14 @@ public class ActorInsta implements IActor, Runnable {
         }
     }
 
+    private void completeRun() {
+        isCompleted = true;
+        executionCounter++;
+
+        endTime = LocalDateTime.now();
+        sendStatusAfterCompletion();
+    }
+
     private void sendStatusAfterCompletion() {
         emailer.generateAndSendEmail(getNameForLog() + "Execution Completed." + generateStatusForEmail());
     }
@@ -207,7 +235,7 @@ public class ActorInsta implements IActor, Runnable {
             prop.setMaxPostsCount(ThreadLocalRandom.current().nextInt(values, prop.getMaxPostsCount() + 10) - 5);
     }
 
-    private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
+    private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException, InstaActorExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
         sleep(getRandomViewTimeout());
@@ -260,7 +288,7 @@ public class ActorInsta implements IActor, Runnable {
         return wasInterrupted;
     }
 
-    private void addCommentToPost(){
+    private void addCommentToPost() throws InstaActorExecutionException {
             try {
                 String commentText = InstaActorComments.generateComment(currentPostType);
                 logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
@@ -281,12 +309,13 @@ public class ActorInsta implements IActor, Runnable {
 
     }
 
-    private void addLikeToPost() {
+    private void addLikeToPost() throws InstaActorExecutionException {
         if(InstaActorElements.getPostLikeButton() != null){
             logger.info(getNameForLog() + "Like post");
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
             if(suspectedActionsDetectorOnAction()){
                 logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
+
                 resetCurrentPostStatus();
             }
             else{
@@ -305,7 +334,7 @@ public class ActorInsta implements IActor, Runnable {
 //        currentStatus = "";
     }
 
-    private boolean suspectedActionsDetectorOnAction() {
+    private boolean suspectedActionsDetectorOnAction() throws InstaActorExecutionException {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
             logger.warn(getNameForLog() + "!!!WARNING!!!");
@@ -320,18 +349,22 @@ public class ActorInsta implements IActor, Runnable {
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()),
                             TimeZone.getDefault().toZoneId());
             prop.setBlockActionPoint(getName(), triggerTime.toString());
-            try {
-                TimeUnit.SECONDS.sleep(30);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            this.prop = new InstaActorProperties(this.name);
-            try {
-                TimeUnit.SECONDS.sleep(30);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return true;
+
+            throw new InstaActorExecutionException("Like or Comment block");
+
+//            initProperties();
+//            try {
+//                TimeUnit.SECONDS.sleep(30);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            //this.prop = new InstaActorProperties(this.name);
+//            try {
+//                TimeUnit.SECONDS.sleep(30);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            return true;
         }
         return false;
     }
@@ -507,6 +540,17 @@ public class ActorInsta implements IActor, Runnable {
     private void checkSuspectedActionsDetectorAfterLogin() throws InstaActorStopExecutionException {
         ElementsCollection caption = $$(By.xpath("//h3[contains(.,'Your Account Was Compromised')]"));
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
+        ElementsCollection changePasswordButton = $$(By.xpath("//button[contains(text(),'Change Password')]"));
+        if((caption.size() > 0) && (changePasswordButton.size() > 0)){
+            changePasswordButton.get(0).click();
+            InstaActorElements.getUserOldPassInput().val(prop.getUserPass()).pressTab();
+            generateNewUserPassword();
+            initPropertiesAndSetInitVariables();
+            InstaActorElements.getUserNewPassInput().val(prop.getUserPass()).pressTab();
+            InstaActorElements.getUserConfirmNewPassInput().val(prop.getUserPass()).pressEnter();
+            $(By.xpath("//button[contains(.,'Change Password')]")).waitUntil(disappears, 10000);
+            sleep(3000);
+        }
         if((caption.size() > 0) && (buttonReport.size() > 0)){
             logger.warn(getNameForLog() + "Can't login to account!!!. Your Account Was Compromised.");
             throw new InstaActorStopExecutionException(getNameForLog() + "CAN'T LOGIN ERROR. Your Account Was Compromised");
@@ -515,6 +559,30 @@ public class ActorInsta implements IActor, Runnable {
             logger.error(getNameForLog() + "Can't login to account");
             throw new InstaActorStopExecutionException(getNameForLog() + "LOGIN SECURITY CODE");
         }
+    }
+
+    private void generateNewUserPassword() {
+        prop.setNewPassword(getName(), generatePassword(15));
+    }
+
+    private static String generatePassword(int length) {
+        String capitalCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        String specialCharacters = "!@#$";
+        String numbers = "1234567890";
+        String combinedChars = capitalCaseLetters + lowerCaseLetters + specialCharacters + numbers;
+        Random random = new Random();
+        char[] password = new char[length];
+
+        password[0] = lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length()));
+        password[1] = capitalCaseLetters.charAt(random.nextInt(capitalCaseLetters.length()));
+        password[2] = specialCharacters.charAt(random.nextInt(specialCharacters.length()));
+        password[3] = numbers.charAt(random.nextInt(numbers.length()));
+
+        for(int i = 4; i< length ; i++) {
+            password[i] = combinedChars.charAt(random.nextInt(combinedChars.length()));
+        }
+        return String.valueOf(password);
     }
 
     private void checkSuspectedPopups() throws InstaActorStopExecutionException {
@@ -737,12 +805,12 @@ public class ActorInsta implements IActor, Runnable {
         return ThreadLocalRandom.current().nextInt(prop.getViewMinDelay(), prop.getViewMaxDelay() + 1);
     }
 
-    private void followAccountFromYourFeed(){
+    private void followAccountFromYourFeed() throws InstaActorExecutionException {
         open("https://www.instagram.com/accounts/activity/");
         followAccounts();
     }
 
-    private void followSuggestedAccounts(){
+    private void followSuggestedAccounts() throws InstaActorExecutionException {
         open("https://www.instagram.com/explore/people/suggested/");
         $(By.xpath("//h4[text()='Suggested']")).waitUntil(Condition.visible, 10000);
         followAccounts();
@@ -757,7 +825,7 @@ public class ActorInsta implements IActor, Runnable {
         return true;
     }
 
-    private void followAccounts() {
+    private void followAccounts() throws InstaActorExecutionException {
         logger.info(getNameForLog() + "Review and follow accounts");
         waitSomeTime(getRandomViewTimeout());
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
