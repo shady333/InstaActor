@@ -5,11 +5,12 @@ import org.apache.log4j.Logger;
 
 import java.util.AbstractMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Controller implements IController {
+public class Controller implements IController, Runnable {
 
     final static Logger logger = Logger.getLogger(Controller.class);
 
@@ -18,9 +19,11 @@ public class Controller implements IController {
     @Override
     public void registerActor(String actorName) {
         ActorInsta actorInsta = new ActorInsta(actorName);
+//        actorInsta.shouldRun(true);
         registeredActors.add(actorInsta);
-        Thread thread = new Thread(actorInsta);
-        thread.start();
+
+//        Thread thread = new Thread(actorInsta);
+//        thread.start();
     }
 
     @Override
@@ -33,27 +36,13 @@ public class Controller implements IController {
                         registeredActors.stream()
                                 .filter(item -> !item.isRunning())
                                 .forEach(item ->
-                                        (new Thread((ActorInsta)item)).start()
+                                        (((ActorInsta)item)).shouldRun(true)
                                 );
                     }
                     else{
-                        AtomicBoolean registered = new AtomicBoolean(false);
-                        registeredActors.forEach(item -> {
-                            if(item.getName().equals(action.getKey())){
-                                registered.set(true);
-                            }
-                        });
-                        if(!registered.get())
-                        {
-                            registerActor(action.getKey());
-                        }
-                        else{
-                            //TODO make actor running
-//                            registeredActors.stream()
-//                                    .filter(item -> !item.isRunning())
-//                                    .forEach(item ->
-//                                            (new Thread((ActorInsta)item)).start());
-                        }
+                        registeredActors.stream()
+                                .filter(item -> item.getName().equals(action.getKey()))
+                                .forEach(item -> ((ActorInsta)item).shouldRun(true));
                     }
 
                     break;
@@ -61,13 +50,26 @@ public class Controller implements IController {
                     logger.info("Received action " + ActorActions.STOP + " for Actor - " + action.getKey());
                     if(action.getKey().equals("ALL")){
                         registeredActors.forEach(item -> {
-                            (item).stop();
+                            ((ActorInsta)item).shouldRun(false);
                         });
                     }
                     else {
                         registeredActors.stream()
                                 .filter(item -> item.getName().equals(action.getKey()))
-                                .forEach(item -> item.stop());
+                                .forEach(item -> ((ActorInsta)item).shouldRun(false));
+                    }
+                    break;
+                case STATUS:
+                    logger.info("Received action " + ActorActions.STATUS + " for Actor - " + action.getKey());
+                    if(action.getKey().equals("ALL")){
+                        registeredActors.forEach(item -> {
+                            ((ActorInsta)item).sendStatus();
+                        });
+                    }
+                    else {
+                        registeredActors.stream()
+                                .filter(item -> item.getName().equals(action.getKey()))
+                                .forEach(item -> ((ActorInsta)item).sendStatus());
                     }
                     break;
             }
@@ -85,18 +87,47 @@ public class Controller implements IController {
         });
     }
 
-    public void startAllActors(){
-        registeredActors.stream()
-                .filter(item -> !item.isRunning())
-                .forEach(item -> {
-                            (new Thread((ActorInsta) item)).start();
-                            try {
-                                TimeUnit.SECONDS.sleep(30);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                );
+    private boolean completed = false;
+
+    private void startAllActors(){
+
+        for(IActor item : registeredActors){
+            (((ActorInsta) item)).shouldRun(true);
+            (((ActorInsta) item)).start();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+//        Iterator<IActor> itr = registeredActors.iterator();
+//
+//        while(itr.hasNext()){
+//            (((ActorInsta) itr)).start();
+//            try {
+//                TimeUnit.SECONDS.sleep(30);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//        }
+
+
+//        registeredActors.stream()
+////                .filter(item -> !item.isRunning())
+//                .forEach(item -> {
+//                            //(((ActorInsta) item)).shouldRun(true);
+//                            (((ActorInsta) item)).start();
+//                            try {
+//                                TimeUnit.SECONDS.sleep(30);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                );
+
+        //startAllActors();
     }
 
     public void startAllInterruptedActors(){
@@ -104,7 +135,7 @@ public class Controller implements IController {
                 .filter(item -> !item.isRunning())
                 .forEach(item -> {
                             if (((ActorInsta) item).wasInterrupted()) {
-                                (new Thread((ActorInsta) item)).start();
+                                (((ActorInsta) item)).start();
                                 try {
                                     TimeUnit.SECONDS.sleep(30);
                                 } catch (InterruptedException e) {
@@ -118,6 +149,21 @@ public class Controller implements IController {
     public void getStatusOfActors(){
         for(IActor actor : registeredActors){
             logger.info(actor.getName() + " : " + actor.getStatus());
+        }
+    }
+
+    private AtomicBoolean running = new AtomicBoolean(true);
+
+    public boolean isRunning(){
+        return running.get();
+    }
+
+    public void run() {
+        int i = 0;
+        while(running.get()){
+            startAllActors();
+            i++;
+            logger.info(i + " run completed.");
         }
     }
 }

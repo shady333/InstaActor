@@ -7,6 +7,7 @@ import com.dudar.utils.services.Emailer;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -22,32 +23,62 @@ public class Executor {
         Date lastActionDate = new Date();
         boolean wasStopped = false;
 
-        Controller controller = new Controller();
-//        controller.registerActor("3dprint");
-//        TimeUnit.SECONDS.sleep(30);
-//        controller.registerActor("bricks");
-//        TimeUnit.SECONDS.sleep(30);
-//        controller.regis030);
-        controller.registerActor("neverold");
-        TimeUnit.SECONDS.sleep(30);
+        Runnable controller = new Controller();
+        ((Controller) controller).registerActor("3dprint");
+        ((Controller) controller).registerActor("bricks");
+        ((Controller) controller).registerActor("legomini");
+        ((Controller) controller).registerActor("neverold");
+        ((Controller) controller).registerActor("inline");
 
         Emailer emailerService = new Emailer();
 
+        Thread controllerThread = new Thread(controller);
+        controllerThread.start();
+
+//        ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+
+        Process p = null;
+
         while(true){
-            if(wasStopped && Utilities.isInternetConnection()){
-                controller.startAllActors();
-                wasStopped = false;
-            }
-            if(!Utilities.isInternetConnection()){
+
+//            controller.start();
+
+
+
+
+            if(!Utilities.isInternetConnection() && !wasStopped){
+
+                try {
+                    p = Runtime.getRuntime().exec("sh stopGrid.sh");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                p.waitFor();
+
                 logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
 //                EmailService.generateAndSendEmail("STOPPING ALL ACTORS. Out of Internet connection.");
-                controller.stopAllActors();
+                ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
                 wasStopped = true;
             }
 
+            if(wasStopped && Utilities.isInternetConnection()){
 
+
+                try {
+                    p = Runtime.getRuntime().exec("sh startGrid.sh");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                p.waitFor();
+
+                logger.warn("START ALL ACTORS. Internet connection resumed.");
+                ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                wasStopped = false;
+            }
+
+//
             logger.info("Tick from executor");
-
+//
             try {
                 currentAction = emailerService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
             } catch (MessagingException e) {
@@ -55,13 +86,15 @@ public class Executor {
             }
             if(currentAction != null && currentAction.getValue() != ActorActions.UNDEFINED){
                 logger.info("Received action:" + currentAction.getKey() + "; " + currentAction.getValue());
-                controller.proceedAction(currentAction);
+                ((Controller) controller).proceedAction(currentAction);
 
                 lastActionDate = new Date();
             }
             currentAction = null;
+//
+//            controller.getStatusOfActors();
 
-            controller.getStatusOfActors();
+//            controller.stopAllActors();
 
             TimeUnit.SECONDS.sleep(30);
         }
