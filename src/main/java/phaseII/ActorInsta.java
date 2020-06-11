@@ -126,6 +126,8 @@ public class ActorInsta implements IActor {
 
         allTags.removeAll(defectedTags);
 
+        completedTags = new ArrayList<>();
+
         sleep(5000);
     }
 
@@ -204,8 +206,7 @@ public class ActorInsta implements IActor {
                     if (!completedTags.contains(searchTag)) {
 
                         if (searchByTag(searchTag)) {
-                            setRandomPostsCountValue();
-                            interactWithPosts(prop.getMaxPostsCount());
+                            interactWithPosts();
                             WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                             mouseMoveToElementAndClick(closeButton);
                         }
@@ -248,6 +249,7 @@ public class ActorInsta implements IActor {
                 }
                 if(isCompleted || !running.get()){
                     stop();
+                    isCompleted = false;
                     break;
                 }
                 closeSession();
@@ -259,6 +261,13 @@ public class ActorInsta implements IActor {
                 logger.error("Can't sleep\n" + e.getMessage());
             }
         }
+    }
+
+    private int getRandomPostsCountToView(){
+        setRandomPostsCountValue();
+        int postsToView = prop.getMaxPostsCount();
+        logger.debug(getNameForLog() + "Posts to view - " + postsToView);
+        return postsToView;
     }
 
     private void completeRun() {
@@ -284,13 +293,14 @@ public class ActorInsta implements IActor {
             prop.setMaxPostsCount(ThreadLocalRandom.current().nextInt(values, prop.getMaxPostsCount() + 10) - 5);
     }
 
-    private void  interactWithPosts(int maxPostsCount) throws InstaActorStopExecutionException {
+    private void  interactWithPosts() throws InstaActorStopExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
         sleep(getRandomViewTimeout());
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
         mouseMoveToElementAndClick(firstPostToLike);
-        for(int i = 1; i <= maxPostsCount; i++){
+        int maxPosts = getRandomPostsCountToView();
+        for(int i = 1; i <= maxPosts; i++){
             stopAtNoInternetConnection();
             if(!running.get()){
                 throw new InstaActorStopExecutionException();
@@ -667,7 +677,7 @@ public class ActorInsta implements IActor {
 
     private void closeSession() {
         try{
-            writeListToFile(defectedTags, getDefectedTagsFilePath());
+            //writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
             sleep(10000);

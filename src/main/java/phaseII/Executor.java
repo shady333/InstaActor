@@ -10,6 +10,8 @@ import javax.mail.MessagingException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Executor {
@@ -36,6 +38,15 @@ public class Executor {
         controllerThread.start();
 
 //        ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+
+        ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
+        ses.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                resetGrid();
+            }
+        }, 0, 4, TimeUnit.HOURS);
+
 
         Process p = null;
 
@@ -97,6 +108,22 @@ public class Executor {
 //            controller.stopAllActors();
 
             TimeUnit.SECONDS.sleep(30);
+        }
+    }
+
+    private static void resetGrid() {
+        Process p = null;
+        logger.info("RESET GRID");
+        try {
+            p = Runtime.getRuntime().exec("sh stopGrid.sh");
+            p.waitFor();
+
+            p = Runtime.getRuntime().exec("sh startGrid.sh");
+            p.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

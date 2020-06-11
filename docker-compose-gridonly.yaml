@@ -1,7 +1,7 @@
 version: '2'
 services:
   chrome:
-    image: selenium/node-chrome:3.14.0-gallium
+    image: selenium/node-chrome:3.141.59-20200525
     volumes:
       - /dev/shm:/dev/shm
     depends_on:
@@ -10,7 +10,7 @@ services:
       HUB_HOST: hub
 
   hub:
-    image: selenium/hub:3.14.0-gallium
+    image: selenium/hub:3.141.59-20200525
     ports:
       - "4444:4444"
     environment:
