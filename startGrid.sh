@@ -1,5 +1,9 @@
 #!/bin/bash
 
-#Phase 2. Start selenium grid
+#Phase. Start selenium grid
 echo "starting Selenium GRID in docker"
-docker-compose -f docker-compose.yaml --compatibility up -d
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  docker-compose -f docker-compose-pi.yaml --compatibility up -d
+else
+  docker-compose -f docker-compose.yaml --compatibility up -d
+fi
