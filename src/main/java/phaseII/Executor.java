@@ -62,6 +62,11 @@ public class Executor {
         }, 0, 4, TimeUnit.HOURS);
 
 
+        try{
+            Thread.sleep(60);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
 
         controllersCollection.forEach(controller -> {
