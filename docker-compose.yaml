@@ -2,9 +2,16 @@
 # Add the `-d` flag at the end for detached execution
 version: "3"
 services:
-  chrome:
+  chrome1:
     image: selenium/standalone-chrome:latest
     volumes:
       - /dev/shm:/dev/shm
     ports:
-      - "4444:4444"
+      - "4445:4444"
+
+  chrome2:
+    image: selenium/standalone-chrome:latest
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "4447:4444"
