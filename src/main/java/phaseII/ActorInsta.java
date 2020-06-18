@@ -179,7 +179,7 @@ public class ActorInsta implements IActor {
                 initSession();
 
 
-                mainActivities();
+                //mainActivities();
 
                 completeRun();
             }
