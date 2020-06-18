@@ -37,11 +37,11 @@ public class Executor {
         ((Controller) controller1).registerActor("bricks");
         ((Controller) controller1).registerActor("legomini");
         ((Controller) controller1).registerActor("snail");
-        ((Controller) controller2).registerActor("neverold");
-        ((Controller) controller2).registerActor("inline");
+//        ((Controller) controller2).registerActor("neverold");
+//        ((Controller) controller2).registerActor("inline");
 
         controllersCollection.add((Controller) controller1);
-        controllersCollection.add((Controller) controller2);
+//        controllersCollection.add((Controller) controller2);
 
 
 
