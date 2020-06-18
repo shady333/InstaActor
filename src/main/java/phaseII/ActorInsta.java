@@ -263,7 +263,7 @@ public class ActorInsta implements IActor {
     }
 
     private int getRandomPostsCountToView(){
-        setRandomPostsCountValue();
+        //setRandomPostsCountValue();
         int postsToView = prop.getMaxPostsCount();
         logger.debug(getNameForLog() + "Posts to view - " + postsToView);
         return postsToView;
