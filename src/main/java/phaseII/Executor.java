@@ -174,10 +174,10 @@ public class Executor {
         Process p = null;
         logger.info("RESET GRID");
         try {
-            p = Runtime.getRuntime().exec("sh stopGrid.sh");
+            p = Runtime.getRuntime().exec("bash stopGrid.sh");
             p.waitFor();
 
-            p = Runtime.getRuntime().exec("sh startGrid.sh");
+            p = Runtime.getRuntime().exec("bash startGrid.sh");
             p.waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
