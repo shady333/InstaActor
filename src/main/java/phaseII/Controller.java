@@ -1,6 +1,7 @@
 package phaseII;
 
 import com.dudar.utils.services.ActorActions;
+import com.dudar.utils.services.EmailService;
 import org.apache.log4j.Logger;
 
 import java.util.AbstractMap;
@@ -9,12 +10,21 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class Controller implements IController, Runnable {
 
     final static Logger logger = Logger.getLogger(Controller.class);
 
     private Set<IActor> registeredActors = new HashSet<>();
+
+    public String getStatusForAll(){
+        final String[] status = {""};
+        registeredActors.forEach(item -> {
+            status[0] += item.getName() + " : " + item.isRunning() + ";\n";
+        });
+        return status[0];
+    }
 
     @Override
     public void registerActor(String actorName) {
@@ -61,16 +71,20 @@ public class Controller implements IController, Runnable {
                     break;
                 case STATUS:
                     logger.info("Received action " + ActorActions.STATUS + " for Actor - " + action.getKey());
-                    if(action.getKey().equals("ALL")){
-                        registeredActors.forEach(item -> {
-                            ((ActorInsta)item).sendStatus();
-                        });
-                    }
-                    else {
-                        registeredActors.stream()
-                                .filter(item -> item.getName().equals(action.getKey()))
-                                .forEach(item -> ((ActorInsta)item).sendStatus());
-                    }
+//                    if(action.getKey().equals("ALL")){
+//                        final String[] statusAll = {"Status for : " + registeredActors.toString() + "\n"};
+//                        statusAll[0] += "Actors count = " + registeredActors.size() + "\n";
+//                        registeredActors.forEach(item -> {
+//                            statusAll[0] += ((ActorInsta)item).getName() + " : " + ((ActorInsta)item).isRunning() + "\n";
+//                            ((ActorInsta)item).sendStatus();
+//                        });
+//                        EmailService.generateAndSendEmail(statusAll[0]);
+//                    }
+//                    else {
+//                        registeredActors.stream()
+//                                .filter(item -> item.getName().equals(action.getKey()))
+//                                .forEach(item -> ((ActorInsta)item).sendStatus());
+//                    }
                     break;
             }
         }
@@ -81,6 +95,25 @@ public class Controller implements IController, Runnable {
 
     }
 
+    @Override
+    public boolean containsActor(String actorName) {
+        long result = registeredActors.stream().filter(item -> item.getName().equals(actorName)).count();
+        registeredActors.stream().close();
+        return result > 0 ? true : false;
+    }
+
+    @Override
+    public void stopActor(String actorName) {
+        registeredActors.stream().filter(item -> item.getName().equals(actorName))
+                .forEach(item -> ((ActorInsta)item).shouldRun(false));
+    }
+
+    @Override
+    public void startActor(String actorName) {
+        registeredActors.stream().filter(item -> item.getName().equals(actorName))
+                .forEach(item -> ((ActorInsta)item).shouldRun(true));
+    }
+
     public void stopAllActors(){
         registeredActors.forEach(item -> {
             (item).stop();
@@ -89,10 +122,10 @@ public class Controller implements IController, Runnable {
 
     private boolean completed = false;
 
-    private void startAllActors(){
+    public void startAllActors(){
 
         for(IActor item : registeredActors){
-            (((ActorInsta) item)).shouldRun(true);
+            //(((ActorInsta) item)).shouldRun(true);
             (((ActorInsta) item)).start();
             try {
                 Thread.sleep(5000);

@@ -179,10 +179,52 @@ public class ActorInsta implements IActor {
                 initSession();
 
 
+//                mainActivities();
 
-                authenticate();
-                checkSuspectedPopups();
-                checkAndCloseNotificationsPopup();
+                completeRun();
+            }
+            catch (AssertionError err){
+                logger.error(getNameForLog() + " ASSERTION ERROR \n"
+                    + err.getMessage());
+                emailer.generateAndSendEmail(getNameForLog() + err.getMessage(), screenshot("tmp/crash/assertion_error.png"));
+                crashesCount++;
+            }
+            catch (InstaActorStopExecutionException executionException){
+                logger.error(getNameForLog() + " STOP EXECUTION \n" + executionException.getMessage());
+                isCompleted = true;
+                running.set(false);
+            }
+            catch (Exception ex){
+                logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
+                emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
+                crashesCount++;
+            }
+            finally {
+                closeSession();
+                if(crashesOverExpected()){
+                    emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
+                    stop();
+                }
+                if(isCompleted || !running.get()){
+                    //stop();
+                    //isCompleted = false;
+                    break;
+                }
+
+            }
+
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                logger.error("Can't sleep\n" + e.getMessage());
+            }
+        }
+    }
+
+    private void mainActivities() throws InstaActorStopExecutionException {
+        authenticate();
+        checkSuspectedPopups();
+        checkAndCloseNotificationsPopup();
 
 //                allTags.removeAll(defectedTags);
 //
@@ -194,73 +236,29 @@ public class ActorInsta implements IActor {
 //                    }
 //                });
 
-                Collections.shuffle(allTags);
-                int reactionsCounter = 0;
-                for (String searchTag : allTags) {
-                    processedPosts.put(searchTag, new ArrayList());
-                    if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
-                        followAccountFromYourFeed();
-                        reactionsCounter = 0;
-                    }
+        Collections.shuffle(allTags);
+        int reactionsCounter = 0;
+        for (String searchTag : allTags) {
+            processedPosts.put(searchTag, new ArrayList());
+            if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
+                followAccountFromYourFeed();
+                reactionsCounter = 0;
+            }
 
-                    if (!completedTags.contains(searchTag)) {
+            if (!completedTags.contains(searchTag)) {
 
-                        if (searchByTag(searchTag)) {
-                            interactWithPosts();
-                            WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
-                            mouseMoveToElementAndClick(closeButton);
-                        }
-
-                        completedTags.add(searchTag);
-                    }
-                    reactionsCounter++;
+                if (searchByTag(searchTag)) {
+                    interactWithPosts();
+                    WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+                    mouseMoveToElementAndClick(closeButton);
                 }
-                someActions();
-                followSuggestedAccounts();
-                completeRun();
-//                running.set(false);
-            }
-//            catch (InstaActorExecutionException ex){
-//                if(ex.getMessage().contains("Like or Comment block")){
-//                    completeRun();
-//                }
-//            }
-            catch (AssertionError err){
-                logger.error(getNameForLog() + " ASSERTION ERROR \n"
-                    + err.getMessage());
-                emailer.generateAndSendEmail(getNameForLog() + err.getMessage(), screenshot("tmp/crash/assertion_error.png"));
-                crashesCount++;
-            }
-            catch (InstaActorStopExecutionException executionException){
-                logger.error(getNameForLog() + " STOP EXECUTION \n" + executionException.getMessage());
-                isCompleted = true;
-                running.set(false);
-//                sendReportAndStopCurrentRun();
-            }
-            catch (Exception ex){
-                logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
-                emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
-                crashesCount++;
-            }
-            finally {
-                if(crashesOverExpected()){
-                    emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
-                    stop();
-                }
-                if(isCompleted || !running.get()){
-                    stop();
-                    isCompleted = false;
-                    break;
-                }
-                closeSession();
-            }
 
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                logger.error("Can't sleep\n" + e.getMessage());
+                completedTags.add(searchTag);
             }
+            reactionsCounter++;
         }
+        someActions();
+        followSuggestedAccounts();
     }
 
     private int getRandomPostsCountToView(){

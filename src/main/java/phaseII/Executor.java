@@ -9,33 +9,49 @@ import org.apache.log4j.Logger;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.openqa.selenium.remote.DriverCommand.STATUS;
+
 public class Executor {
 
     final static Logger logger = Logger.getLogger(Executor.class);
-
+    static List<Controller> controllersCollection = new ArrayList<>();
+    static Emailer emailerService = new Emailer();
 
     public static void main(String[] args) throws InterruptedException {
         AbstractMap.SimpleEntry<String, ActorActions> currentAction = null;
 
+
         Date lastActionDate = new Date();
         boolean wasStopped = false;
 
-        Runnable controller = new Controller();
-        ((Controller) controller).registerActor("3dprint");
-        ((Controller) controller).registerActor("bricks");
-        ((Controller) controller).registerActor("legomini");
-        ((Controller) controller).registerActor("neverold");
-        ((Controller) controller).registerActor("inline");
+        Runnable controller1 = new Controller();
+        Runnable controller2 = new Controller();
+        ((Controller) controller1).registerActor("3dprint");
+        ((Controller) controller1).registerActor("bricks");
+        ((Controller) controller1).registerActor("legomini");
+        ((Controller) controller2).registerActor("neverold");
+        ((Controller) controller2).registerActor("inline");
 
-        Emailer emailerService = new Emailer();
+        controllersCollection.add((Controller) controller1);
+        controllersCollection.add((Controller) controller2);
 
-        Thread controllerThread = new Thread(controller);
-        controllerThread.start();
+        controllersCollection.forEach(controller -> {
+            Thread controllerThread = new Thread(controller);
+            controllerThread.start();
+        });
+
+//        Thread controllerThread = new Thread(controller1);
+//        controllerThread.start();
+//
+//        controllersCollection.add(new Thread(controller1));
+//        controllersCollection.add(new Thread(controller2));
 
 //        ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
 
@@ -68,7 +84,11 @@ public class Executor {
 
                 logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
 //                EmailService.generateAndSendEmail("STOPPING ALL ACTORS. Out of Internet connection.");
-                ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+
+                controllersCollection.forEach(item -> {
+                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+                });
+//                ((Controller) controller1).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
                 wasStopped = true;
             }
 
@@ -83,7 +103,9 @@ public class Executor {
                 p.waitFor();
 
                 logger.warn("START ALL ACTORS. Internet connection resumed.");
-                ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                controllersCollection.forEach(item -> {
+                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                });
                 wasStopped = false;
             }
 
@@ -97,7 +119,13 @@ public class Executor {
             }
             if(currentAction != null && currentAction.getValue() != ActorActions.UNDEFINED){
                 logger.info("Received action:" + currentAction.getKey() + "; " + currentAction.getValue());
-                ((Controller) controller).proceedAction(currentAction);
+
+                proceedAction(currentAction);
+
+//                AbstractMap.SimpleEntry<String, ActorActions> finalCurrentAction = currentAction;
+//                controllersCollection.forEach(item -> {
+//                    item.proceedAction(finalCurrentAction);
+//                });
 
                 lastActionDate = new Date();
             }
@@ -107,7 +135,38 @@ public class Executor {
 
 //            controller.stopAllActors();
 
-            TimeUnit.SECONDS.sleep(30);
+            TimeUnit.SECONDS.sleep(10);
+        }
+    }
+
+    private static void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> currentAction) {
+        switch (currentAction.getValue()){
+            case STATUS:
+                final String[] statusMessage = {"STATUS for ALL\n"};
+                controllersCollection.forEach(controller -> {
+                    statusMessage[0] += controller.getStatusForAll();
+                });
+                EmailService.generateAndSendEmail(statusMessage[0]);
+                break;
+            case STOP:
+                controllersCollection.forEach(controller -> {
+                    if(currentAction.getKey().equals("ALL")){
+                        controller.stopAllActors();
+                    }
+                    else if(controller.containsActor(currentAction.getKey())){
+                        controller.stopActor(currentAction.getKey());
+                    }
+                });
+                break;
+            case START:
+                controllersCollection.forEach(controller -> {
+                    if(currentAction.getKey().equals("ALL")){
+                        controller.startAllActors();
+                    }
+                    else if(controller.containsActor(currentAction.getKey())){
+                        controller.startActor(currentAction.getKey());
+                    }
+                });
         }
     }
 
