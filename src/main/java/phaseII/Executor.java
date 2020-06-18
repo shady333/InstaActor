@@ -63,7 +63,9 @@ public class Executor {
 
 
         try{
+            logger.info("Start sleep");
             Thread.sleep(60);
+            logger.info("End sleep");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -71,6 +73,7 @@ public class Executor {
 
         controllersCollection.forEach(controller -> {
             Thread controllerThread = new Thread(controller);
+            logger.info("Start for " + controller.toString());
             controllerThread.start();
             try{
                 Thread.sleep(30);
@@ -188,14 +191,19 @@ public class Executor {
         logger.info("RESET GRID");
         try {
             p = Runtime.getRuntime().exec("bash stopGrid.sh");
+            logger.info("bash stopGrid.sh");
             p.waitFor();
+            logger.info("p.waitFor()");
 
             p = Runtime.getRuntime().exec("bash startGrid.sh");
+            logger.info("bash startGrid.sh");
             p.waitFor();
+            logger.info("p.waitFor()");
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        logger.info("RESET GRID Completed");
     }
 }
