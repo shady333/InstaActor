@@ -26,7 +26,7 @@ public class Executor {
 
     public static void main(String[] args) throws InterruptedException {
         AbstractMap.SimpleEntry<String, ActorActions> currentAction = null;
-
+        Process p = null;
 
         Date lastActionDate = new Date();
         boolean wasStopped = false;
@@ -36,16 +36,14 @@ public class Executor {
         ((Controller) controller1).registerActor("3dprint");
         ((Controller) controller1).registerActor("bricks");
         ((Controller) controller1).registerActor("legomini");
+        ((Controller) controller1).registerActor("snail");
         ((Controller) controller2).registerActor("neverold");
         ((Controller) controller2).registerActor("inline");
 
         controllersCollection.add((Controller) controller1);
         controllersCollection.add((Controller) controller2);
 
-        controllersCollection.forEach(controller -> {
-            Thread controllerThread = new Thread(controller);
-            controllerThread.start();
-        });
+
 
 //        Thread controllerThread = new Thread(controller1);
 //        controllerThread.start();
@@ -64,7 +62,17 @@ public class Executor {
         }, 0, 4, TimeUnit.HOURS);
 
 
-        Process p = null;
+
+
+        controllersCollection.forEach(controller -> {
+            Thread controllerThread = new Thread(controller);
+            controllerThread.start();
+            try{
+                Thread.sleep(30);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
 
         while(true){
 
