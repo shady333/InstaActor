@@ -76,7 +76,7 @@ public class Executor {
             if(!Utilities.isInternetConnection() && !wasStopped){
 
                 try {
-                    p = Runtime.getRuntime().exec("sh stopGrid.sh");
+                    p = Runtime.getRuntime().exec("bash stopGrid.sh");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -96,7 +96,7 @@ public class Executor {
 
 
                 try {
-                    p = Runtime.getRuntime().exec("sh startGrid.sh");
+                    p = Runtime.getRuntime().exec("bash startGrid.sh");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
