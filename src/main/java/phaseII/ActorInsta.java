@@ -204,11 +204,12 @@ public class ActorInsta implements IActor {
                 if(crashesOverExpected()){
                     emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
                     stop();
+                    return;
                 }
                 if(isCompleted || !running.get()){
                     //stop();
                     //isCompleted = false;
-                    break;
+                    return;
                 }
 
             }
@@ -771,7 +772,7 @@ public class ActorInsta implements IActor {
 
     private boolean crashesOverExpected() {
         logger.debug(getNameForLog() + "Current crashes: " + crashesCount);
-        if(crashesCount > 10){
+        if(crashesCount > 5){
             return true;
         }
         return false;
