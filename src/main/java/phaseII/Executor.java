@@ -65,16 +65,6 @@ public class Executor {
             }
         }, 0, 6, TimeUnit.HOURS);
 
-
-        try{
-            logger.info("Start sleep");
-            Thread.sleep(60);
-            logger.info("End sleep");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-
         controllersCollection.forEach(controller -> {
             try{
                 Thread.sleep(30);
