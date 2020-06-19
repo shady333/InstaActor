@@ -10,7 +10,7 @@ services:
 
   selenium1:
     restart: always
-    container_name: selenium
+    container_name: selenium1
     image: deinchristian/rpi-selenium-node-chrome
     ports:
       - "5902:5902"
@@ -25,7 +25,7 @@ services:
 
   selenium2:
     restart: always
-    container_name: selenium
+    container_name: selenium2
     image: deinchristian/rpi-selenium-node-chrome
     ports:
       - "5904:5904"
