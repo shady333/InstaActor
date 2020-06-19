@@ -63,7 +63,7 @@ public class Executor {
             public void run() {
                 resetGrid();
             }
-        }, 0, 4, TimeUnit.HOURS);
+        }, 0, 6, TimeUnit.HOURS);
 
 
         try{
@@ -76,6 +76,11 @@ public class Executor {
 
 
         controllersCollection.forEach(controller -> {
+            try{
+                Thread.sleep(30);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             Thread controllerThread = new Thread(controller);
             logger.info("Start for " + controller.toString());
             controllerThread.start();
@@ -87,12 +92,6 @@ public class Executor {
         });
 
         while(true){
-
-//            controller.start();
-
-
-
-
             if(!Utilities.isInternetConnection() && !wasStopped){
 
                 try {
@@ -103,13 +102,7 @@ public class Executor {
                 p.waitFor();
 
                 logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
-//                EmailService.generateAndSendEmail("STOPPING ALL ACTORS. Out of Internet connection.");
-
-//                controllersCollection.forEach(item -> {
-//                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
                 proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
-//                });
-//                ((Controller) controller1).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
                 wasStopped = true;
             }
 
@@ -141,18 +134,9 @@ public class Executor {
 
                 proceedAction(currentAction);
 
-//                AbstractMap.SimpleEntry<String, ActorActions> finalCurrentAction = currentAction;
-//                controllersCollection.forEach(item -> {
-//                    item.proceedAction(finalCurrentAction);
-//                });
-
                 lastActionDate = new Date();
             }
             currentAction = null;
-//
-//            controller.getStatusOfActors();
-
-//            controller.stopAllActors();
 
             TimeUnit.SECONDS.sleep(30);
         }
@@ -186,6 +170,7 @@ public class Executor {
                         controller.startActor(currentAction.getKey());
                     }
                 });
+                break;
             case DOWNLOAD:
                 String propFilePath = "data/" + currentAction.getKey() + "_user.properties";
                 EmailService.generateAndSendEmail(currentAction.getKey() + " PROPERTIES FILE", propFilePath);
@@ -200,6 +185,8 @@ public class Executor {
                 catch (IOException ex){
                     logger.error("Can't replace properties file\n" + ex.getMessage());
                 }
+                break;
+            default:
                 break;
         }
     }
