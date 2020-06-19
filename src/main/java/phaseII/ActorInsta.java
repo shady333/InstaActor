@@ -712,7 +712,7 @@ public class ActorInsta implements IActor {
         WebDriverRunner.setWebDriver(driver);
     }
 
-    private void verifyPreConditions() throws InstaActorStopExecutionException {
+    private void verifyPreConditions() throws InstaActorBreakExecutionException {
         nigthModeCheck();
     }
 
@@ -724,9 +724,9 @@ public class ActorInsta implements IActor {
         return false;
     }
 
-    private void nigthModeCheck() throws InstaActorStopExecutionException {
+    private void nigthModeCheck() throws InstaActorBreakExecutionException {
         if(prop.isNightMode()){
-            throw new InstaActorStopExecutionException("Night mode is active.");
+            throw new InstaActorBreakExecutionException("Night mode is active.");
         }
     }
 
