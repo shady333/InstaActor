@@ -8,7 +8,7 @@ services:
     ports:
       - "4444:4444"
 
-  selenium:
+  selenium1:
     restart: always
     container_name: selenium
     image: deinchristian/rpi-selenium-node-chrome
@@ -20,3 +20,20 @@ services:
     environment:
       - HUB_PORT_4444_TCP_ADDR=seleniumhub
       - HUB_PORT_4444_TCP_PORT=4444
+      - NODE_MAX_SESSION=2
+      - NODE_MAX_INSTANCES=2
+
+  selenium2:
+    restart: always
+    container_name: selenium
+    image: deinchristian/rpi-selenium-node-chrome
+    ports:
+      - "5904:5904"
+    shm_size: 128M
+    depends_on:
+      - seleniumhub
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=seleniumhub
+      - HUB_PORT_4444_TCP_PORT=4444
+      - NODE_MAX_SESSION=2
+      - NODE_MAX_INSTANCES=2
