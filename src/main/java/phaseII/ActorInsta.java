@@ -46,7 +46,8 @@ public class ActorInsta implements IActor {
     private boolean wasInterrupted;
     private int executionCounter;
 
-    private AtomicBoolean running = new AtomicBoolean(false);
+    private AtomicBoolean isEnabled = new AtomicBoolean(false);
+    private AtomicBoolean isRunning = new AtomicBoolean(false);
     final static Logger logger = Logger.getLogger(ActorInsta.class);
     private InstaActorProperties prop;
     private static RemoteWebDriver driver;
@@ -81,7 +82,12 @@ public class ActorInsta implements IActor {
         creationDate = new Date();
         startTime = LocalDateTime.now();
         emailer = new Emailer();
-        running.set(true);
+        isEnabled.set(true);
+    }
+
+    @Override
+    public boolean isActive(){
+        return isRunning.get();
     }
 
     @Override
@@ -131,12 +137,12 @@ public class ActorInsta implements IActor {
 
     @Override
     public String getStatus() {
-        return String.valueOf(running.get());
+        return String.valueOf(isEnabled.get());
     }
 
     @Override
     public void stop() {
-        running.set(false);
+        isEnabled.set(false);
         resetCurrentPostStatus();
     }
 
@@ -146,18 +152,19 @@ public class ActorInsta implements IActor {
     }
 
     @Override
-    public boolean isRunning() {
-        return running.get();
+    public boolean isEnabled() {
+        return isEnabled.get();
     }
 
     public void shouldRun(boolean value){
-        running.set(value);
+        isEnabled.set(value);
     }
 
     public void start() {
         wasInterrupted = false;
         isCompleted = false;
-        while (running.get() && Utilities.isInternetConnection()) {
+        isRunning.set(true);
+        while (isEnabled.get() && Utilities.isInternetConnection()) {
             logger.info(getNameForLog() + "Running: " + this.name);
             initPropertiesAndSetInitVariables();
             try {
@@ -180,7 +187,7 @@ public class ActorInsta implements IActor {
             catch (InstaActorStopExecutionException executionException){
                 logger.error(getNameForLog() + " STOP EXECUTION \n" + executionException.getMessage());
                 isCompleted = true;
-                running.set(false);
+                isEnabled.set(false);
             }
             catch (Exception ex){
                 logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
@@ -192,9 +199,11 @@ public class ActorInsta implements IActor {
                 if(crashesOverExpected()){
                     emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
                     stop();
+                    isRunning.set(false);
                     return;
                 }
-                if(isCompleted || !running.get()){
+                if(isCompleted || !isEnabled.get()){
+                    isRunning.set(false);
                     return;
                 }
 
@@ -205,6 +214,7 @@ public class ActorInsta implements IActor {
                 logger.error("Can't sleep\n" + e.getMessage());
             }
         }
+        isRunning.set(false);
     }
 
     private void mainActivities() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
@@ -273,7 +283,7 @@ public class ActorInsta implements IActor {
         int maxPosts = getRandomPostsCountToView();
         for(int i = 1; i <= maxPosts; i++){
             stopAtNoInternetConnection();
-            if(!running.get()){
+            if(!isEnabled.get()){
                 throw new InstaActorStopExecutionException();
             }
             currentPostUrl = WebDriverRunner.url();
@@ -751,7 +761,7 @@ public class ActorInsta implements IActor {
         }
         String status = "InstaActor STATUS\n"
                 +"\nService name: " + name
-                +"\nService is running: " + running.get()
+                +"\nService is running: " + isEnabled.get()
                 +"\nStarted: " + creationDate
                 +"\nCurrent run start time: " + startTime
                 +"\nCurrent(latest) duration (minutes): " + getExecutionDuration()

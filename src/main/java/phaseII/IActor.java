@@ -10,6 +10,7 @@ public interface IActor {
 
     String getName();
 
-    boolean isRunning();
+    boolean isEnabled();
 
+    boolean isActive();
 }

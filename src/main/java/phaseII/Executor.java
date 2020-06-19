@@ -8,6 +8,10 @@ import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
@@ -101,9 +105,10 @@ public class Executor {
                 logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
 //                EmailService.generateAndSendEmail("STOPPING ALL ACTORS. Out of Internet connection.");
 
-                controllersCollection.forEach(item -> {
-                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
-                });
+//                controllersCollection.forEach(item -> {
+//                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+                proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+//                });
 //                ((Controller) controller1).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
                 wasStopped = true;
             }
@@ -119,9 +124,7 @@ public class Executor {
                 p.waitFor();
 
                 logger.warn("START ALL ACTORS. Internet connection resumed.");
-                controllersCollection.forEach(item -> {
-                    item.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
-                });
+                proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
                 wasStopped = false;
             }
 
@@ -183,6 +186,21 @@ public class Executor {
                         controller.startActor(currentAction.getKey());
                     }
                 });
+            case DOWNLOAD:
+                String propFilePath = "data/" + currentAction.getKey() + "_user.properties";
+                EmailService.generateAndSendEmail(currentAction.getKey() + " PROPERTIES FILE", propFilePath);
+                break;
+            case UPLOAD:
+                try {
+                    Path from = Paths.get("tmp/" + currentAction.getKey() + "_user.properties"); //convert from File to Path
+                    Path to = Paths.get("data/" + currentAction.getKey() + "_user.properties"); //convert from String to Path
+                    Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                    EmailService.generateAndSendEmail(currentAction.getKey() + "Properties file updated");
+                }
+                catch (IOException ex){
+                    logger.error("Can't replace properties file\n" + ex.getMessage());
+                }
+                break;
         }
     }
 
