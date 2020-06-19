@@ -358,8 +358,10 @@ public class ActorInsta implements IActor {
             try {
                 String commentText = InstaActorComments.generateComment(currentPostType);
                 logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
-                $(By.cssSelector("article textarea")).val(commentText);
-                mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
+
+                //$(By.cssSelector("article textarea")).val(commentText);
+                //mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
+
                 if (suspectedActionsDetectorOnAction()) {
                     logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
                     resetCurrentPostStatus();
@@ -378,7 +380,9 @@ public class ActorInsta implements IActor {
     private void addLikeToPost() throws InstaActorStopExecutionException {
         if(InstaActorElements.getPostLikeButton() != null){
             logger.info(getNameForLog() + "Like post");
-            mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+
+            //mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
+
             if(suspectedActionsDetectorOnAction()){
                 logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
                 resetCurrentPostStatus();
