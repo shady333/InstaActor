@@ -67,7 +67,7 @@ public class Executor {
 
         controllersCollection.forEach(controller -> {
             try{
-                Thread.sleep(30);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -75,7 +75,7 @@ public class Executor {
             logger.info("Start for " + controller.toString());
             controllerThread.start();
             try{
-                Thread.sleep(30);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

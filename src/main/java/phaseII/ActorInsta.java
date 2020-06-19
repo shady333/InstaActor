@@ -162,14 +162,6 @@ public class ActorInsta implements IActor {
 
     public void start() {
 
-        try{
-            logger.info("Start sleep");
-            Thread.sleep(60);
-            logger.info("End sleep");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         wasInterrupted = false;
         isCompleted = false;
         isRunning.set(true);
