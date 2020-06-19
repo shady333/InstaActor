@@ -1,17 +1,22 @@
-# To execute this docker-compose yml file use `docker-compose -f <file_name> up`
-# Add the `-d` flag at the end for detached execution
-version: "3"
+version: '2'
 services:
-  chrome1:
-    image: kynetiv/selenium-standalone-chromium-pi:latest
-    volumes:
-      - /dev/shm:/dev/shm
-    ports:
-      - "4445:4444"
 
-  chrome2:
-    image: kynetiv/selenium-standalone-chromium-pi:latest
-    volumes:
-      - /dev/shm:/dev/shm
+  seleniumhub:
+    restart: always
+    container_name: seleniumhub
+    image: deinchristian/rpi-selenium-hub
     ports:
-      - "4447:4444"
+      - "4444:4444"
+
+  selenium:
+    restart: always
+    container_name: selenium
+    image: deinchristian/rpi-selenium-node-chrome
+    ports:
+      - "5900:5900"
+    shm_size: 128M
+    depends_on:
+      - seleniumhub
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=seleniumhub
+      - HUB_PORT_4444_TCP_PORT=4444
