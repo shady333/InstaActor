@@ -151,7 +151,7 @@ public class Executor {
 
 //            controller.stopAllActors();
 
-            TimeUnit.SECONDS.sleep(10);
+            TimeUnit.SECONDS.sleep(30);
         }
     }
 
