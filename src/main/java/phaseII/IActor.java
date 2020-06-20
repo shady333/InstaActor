@@ -13,4 +13,6 @@ public interface IActor {
     boolean isEnabled();
 
     boolean isActive();
+
+    void activate();
 }

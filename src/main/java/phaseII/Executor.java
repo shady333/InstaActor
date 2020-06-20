@@ -61,9 +61,19 @@ public class Executor {
         ses.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
+                try{
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 resetGrid();
+                try{
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        }, 0, 6, TimeUnit.HOURS);
+        }, 0, 1, TimeUnit.HOURS);
 
         controllersCollection.forEach(controller -> {
             try{
@@ -190,10 +200,23 @@ public class Executor {
             p.waitFor();
             logger.info("p.waitFor()");
 
+            try{
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             p = Runtime.getRuntime().exec("bash startGrid.sh");
             logger.info("bash startGrid.sh");
             p.waitFor();
             logger.info("p.waitFor()");
+
+            try{
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {

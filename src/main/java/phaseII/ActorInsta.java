@@ -91,6 +91,12 @@ public class ActorInsta implements IActor {
     }
 
     @Override
+    public void activate() {
+        logger.info(getNameForLog() + "Activating");
+        shouldRun(true);
+    }
+
+    @Override
     public boolean equals(Object obj) {
         boolean result = false;
         if (obj == null || obj.getClass() != getClass()) {
@@ -169,7 +175,6 @@ public class ActorInsta implements IActor {
             logger.info(getNameForLog() + "Running: " + this.name);
             initPropertiesAndSetInitVariables();
             try {
-                stopAtNoInternetConnection();
                 verifyPreConditions();
                 initSession();
                 mainActivities();
@@ -234,7 +239,7 @@ public class ActorInsta implements IActor {
             if (!completedTags.contains(searchTag)) {
 
                 if (searchByTag(searchTag)) {
-                    interactWithPosts();
+                    //interactWithPosts();
                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                     mouseMoveToElementAndClick(closeButton);
                 }
@@ -283,7 +288,6 @@ public class ActorInsta implements IActor {
         mouseMoveToElementAndClick(firstPostToLike);
         int maxPosts = getRandomPostsCountToView();
         for(int i = 1; i <= maxPosts; i++){
-            stopAtNoInternetConnection();
             if(!isEnabled.get()){
                 throw new InstaActorStopExecutionException();
             }
@@ -323,14 +327,6 @@ public class ActorInsta implements IActor {
             if (!moveToNextPostIfAvailable())
                 break;
         }
-    }
-
-    @Deprecated
-    private void stopAtNoInternetConnection() throws InstaActorStopExecutionException {
-//        if(!Utilities.isInternetConnection()){
-//            running.set(false);
-//            throw new InstaActorStopExecutionException("NO INTERNECT CONNECTION");
-//        }
     }
 
     public boolean wasInterrupted() {

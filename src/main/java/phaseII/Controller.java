@@ -64,6 +64,15 @@ public class Controller implements IController, Runnable {
 
     public void startAllActors(){
 
+        registeredActors.forEach(item -> {
+            item.activate();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
         for(IActor item : registeredActors){
             (((ActorInsta) item)).start();
             try {
