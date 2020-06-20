@@ -6,7 +6,7 @@ public interface IActor {
 
     String getStatus();
 
-    void stop();
+    void deactivate();
 
     String getName();
 

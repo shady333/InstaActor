@@ -147,7 +147,7 @@ public class ActorInsta implements IActor {
     }
 
     @Override
-    public void stop() {
+    public void deactivate() {
         isEnabled.set(false);
         resetCurrentPostStatus();
     }
@@ -204,8 +204,9 @@ public class ActorInsta implements IActor {
                 closeSession();
                 if(crashesOverExpected()){
                     emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
-                    stop();
+                    deactivate();
                     isRunning.set(false);
+                    crashesCount = 0;
                     return;
                 }
                 if(isCompleted || !isEnabled.get()){
@@ -555,7 +556,8 @@ public class ActorInsta implements IActor {
         sleep(getRandomViewTimeout());
         InstaActorElements.getUserLoginInput().val(prop.getUserName()).pressTab();
         InstaActorElements.getUserPasswordInput().val(prop.getUserPass()).pressEnter();
-        $(By.xpath("//button[contains(.,'Log In')]")).waitUntil(disappears, 10000);
+        logger.info(getNameForLog() + "Press ENTER on login");
+        $(By.xpath("//button[contains(.,'Log In')]")).waitUntil(disappears, 30000);
         sleep(3000);
         checkSuspectedActionsDetectorAfterLogin();
     }
@@ -692,7 +694,7 @@ public class ActorInsta implements IActor {
             if(!Utilities.checkGridStatus(gridHubUrl))
             {
                 logger.error(getNameForLog() + "GRID not ready for execution. Stop service.");
-                stop();
+                deactivate();
             }
             try {
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);

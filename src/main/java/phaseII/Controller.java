@@ -1,12 +1,9 @@
 package phaseII;
 
-import com.dudar.utils.services.ActorActions;
 import org.apache.log4j.Logger;
 
-import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Controller implements IController, Runnable {
@@ -54,24 +51,21 @@ public class Controller implements IController, Runnable {
                 .forEach(item -> ((ActorInsta)item).shouldRun(true));
     }
 
-    public void stopAllActors(){
+    public void deactivateAllActors(){
         registeredActors.forEach(item -> {
-            (item).stop();
+            (item).deactivate();
+        });
+    }
+
+    public void activateAllActors(){
+        registeredActors.forEach(item -> {
+            (item).activate();
         });
     }
 
     private boolean completed = false;
 
     public void startAllActors(){
-
-        registeredActors.forEach(item -> {
-            item.activate();
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
 
         for(IActor item : registeredActors){
             (((ActorInsta) item)).start();

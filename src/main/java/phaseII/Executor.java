@@ -20,8 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.openqa.selenium.remote.DriverCommand.STATUS;
-
 public class Executor {
 
     final static Logger logger = Logger.getLogger(Executor.class);
@@ -46,16 +44,6 @@ public class Executor {
 
         controllersCollection.add((Controller) controller1);
         controllersCollection.add((Controller) controller2);
-
-
-
-//        Thread controllerThread = new Thread(controller1);
-//        controllerThread.start();
-//
-//        controllersCollection.add(new Thread(controller1));
-//        controllersCollection.add(new Thread(controller2));
-
-//        ((Controller) controller).proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
 
         ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
         ses.scheduleAtFixedRate(new Runnable() {
@@ -154,7 +142,7 @@ public class Executor {
             case STOP:
                 controllersCollection.forEach(controller -> {
                     if(currentAction.getKey().equals("ALL")){
-                        controller.stopAllActors();
+                        controller.deactivateAllActors();
                     }
                     else if(controller.containsActor(currentAction.getKey())){
                         controller.stopActor(currentAction.getKey());
@@ -164,7 +152,7 @@ public class Executor {
             case START:
                 controllersCollection.forEach(controller -> {
                     if(currentAction.getKey().equals("ALL")){
-                        controller.startAllActors();
+                        controller.activateAllActors();
                     }
                     else if(controller.containsActor(currentAction.getKey())){
                         controller.startActor(currentAction.getKey());
