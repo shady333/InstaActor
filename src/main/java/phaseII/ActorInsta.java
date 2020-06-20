@@ -239,7 +239,7 @@ public class ActorInsta implements IActor {
             if (!completedTags.contains(searchTag)) {
 
                 if (searchByTag(searchTag)) {
-                    //interactWithPosts();
+                    interactWithPosts();
                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                     mouseMoveToElementAndClick(closeButton);
                 }
