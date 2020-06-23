@@ -199,12 +199,19 @@ public class ActorInsta implements IActor {
                 logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
                 emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
                 crashesCount++;
+                closeSession();
+                try {
+                    logger.info("Wait some time after crash");
+                    TimeUnit.MINUTES.sleep(5);
+                } catch (InterruptedException e) {
+                    logger.error("Can't sleep\n" + e.getMessage());
+                }
             }
             finally {
                 closeSession();
                 if(crashesOverExpected()){
                     emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
-                    deactivate();
+                    //deactivate();
                     isRunning.set(false);
                     crashesCount = 0;
                     return;
@@ -717,7 +724,7 @@ public class ActorInsta implements IActor {
 
     private boolean crashesOverExpected() {
         logger.debug(getNameForLog() + "Current crashes: " + crashesCount);
-        if(crashesCount > 5){
+        if(crashesCount > 10){
             return true;
         }
         return false;
