@@ -14,7 +14,7 @@ services:
     image: deinchristian/rpi-selenium-node-chrome
     ports:
       - "5902:5902"
-    shm_size: 128M
+    shm_size: 256M
     depends_on:
       - seleniumhub
     environment:

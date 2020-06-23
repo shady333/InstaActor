@@ -1,12 +1,26 @@
 package phaseII;
 
+import com.dudar.utils.services.ActorActions;
+import com.dudar.utils.services.EmailService;
 import org.apache.log4j.Logger;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Controller implements IController, Runnable {
+
+    private String name;
+
+    public Controller(String name){
+        this.name = name;
+    }
 
     final static Logger logger = Logger.getLogger(Controller.class);
 
@@ -85,6 +99,50 @@ public class Controller implements IController, Runnable {
             startAllActors();
             i++;
             logger.info(i + " run completed.");
+        }
+    }
+
+    public void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> currentAction) {
+        switch (currentAction.getValue()){
+            case STATUS:
+                String statusMessage = name + " STATUS for ALL\n";
+                statusMessage += getStatusForAll();
+                EmailService.generateAndSendEmail(statusMessage);
+                break;
+            case STOP:
+                if(currentAction.getKey().equals("ALL")){
+                    deactivateAllActors();
+                }
+                else if(containsActor(currentAction.getKey())){
+                    stopActor(currentAction.getKey());
+                }
+
+                break;
+            case START:
+                if(currentAction.getKey().equals("ALL")){
+                    activateAllActors();
+                }
+                else if(containsActor(currentAction.getKey())){
+                    startActor(currentAction.getKey());
+                }
+                break;
+            case DOWNLOAD:
+                String propFilePath = "data/" + currentAction.getKey() + "_user.properties";
+                EmailService.generateAndSendEmail(currentAction.getKey() + " PROPERTIES FILE", propFilePath);
+                break;
+            case UPLOAD:
+                try {
+                    Path from = Paths.get("tmp/" + currentAction.getKey() + "_user.properties"); //convert from File to Path
+                    Path to = Paths.get("data/" + currentAction.getKey() + "_user.properties"); //convert from String to Path
+                    Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+                    EmailService.generateAndSendEmail(currentAction.getKey() + "Properties file updated");
+                }
+                catch (IOException ex){
+                    logger.error("Can't replace properties file\n" + ex.getMessage());
+                }
+                break;
+            default:
+                break;
         }
     }
 }

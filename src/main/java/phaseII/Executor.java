@@ -33,8 +33,8 @@ public class Executor {
         Date lastActionDate = new Date();
         boolean wasStopped = false;
 
-        Runnable controller1 = new Controller();
-        Runnable controller2 = new Controller();
+        Runnable controller1 = new Controller("controller1");
+        Runnable controller2 = new Controller("controller2");
         ((Controller) controller1).registerActor("3dprint");
         ((Controller) controller1).registerActor("bricks");
         ((Controller) controller1).registerActor("legomini");
@@ -84,14 +84,18 @@ public class Executor {
 
                 try {
                     p = Runtime.getRuntime().exec("bash stopGrid.sh");
+                    p.waitFor();
+
+                    logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
+                    controllersCollection.stream().forEach(controller -> {
+                        controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+                    });
+
+                    wasStopped = true;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                p.waitFor();
 
-                logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
-                proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
-                wasStopped = true;
             }
 
             if(wasStopped && Utilities.isInternetConnection()){
@@ -105,7 +109,9 @@ public class Executor {
                 p.waitFor();
 
                 logger.warn("START ALL ACTORS. Internet connection resumed.");
-                proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                controllersCollection.stream().forEach(controller -> {
+                    controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                });
                 wasStopped = false;
             }
 
@@ -120,7 +126,10 @@ public class Executor {
             if(currentAction != null && currentAction.getValue() != ActorActions.UNDEFINED){
                 logger.info("Received action:" + currentAction.getKey() + "; " + currentAction.getValue());
 
-                proceedAction(currentAction);
+                AbstractMap.SimpleEntry<String, ActorActions> finalCurrentAction = currentAction;
+                controllersCollection.stream().forEach(controller -> {
+                    controller.proceedAction(finalCurrentAction);
+                });
 
                 lastActionDate = new Date();
             }
@@ -130,54 +139,7 @@ public class Executor {
         }
     }
 
-    private static void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> currentAction) {
-        switch (currentAction.getValue()){
-            case STATUS:
-                final String[] statusMessage = {"STATUS for ALL\n"};
-                controllersCollection.forEach(controller -> {
-                    statusMessage[0] += controller.getStatusForAll();
-                });
-                EmailService.generateAndSendEmail(statusMessage[0]);
-                break;
-            case STOP:
-                controllersCollection.forEach(controller -> {
-                    if(currentAction.getKey().equals("ALL")){
-                        controller.deactivateAllActors();
-                    }
-                    else if(controller.containsActor(currentAction.getKey())){
-                        controller.stopActor(currentAction.getKey());
-                    }
-                });
-                break;
-            case START:
-                controllersCollection.forEach(controller -> {
-                    if(currentAction.getKey().equals("ALL")){
-                        controller.activateAllActors();
-                    }
-                    else if(controller.containsActor(currentAction.getKey())){
-                        controller.startActor(currentAction.getKey());
-                    }
-                });
-                break;
-            case DOWNLOAD:
-                String propFilePath = "data/" + currentAction.getKey() + "_user.properties";
-                EmailService.generateAndSendEmail(currentAction.getKey() + " PROPERTIES FILE", propFilePath);
-                break;
-            case UPLOAD:
-                try {
-                    Path from = Paths.get("tmp/" + currentAction.getKey() + "_user.properties"); //convert from File to Path
-                    Path to = Paths.get("data/" + currentAction.getKey() + "_user.properties"); //convert from String to Path
-                    Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
-                    EmailService.generateAndSendEmail(currentAction.getKey() + "Properties file updated");
-                }
-                catch (IOException ex){
-                    logger.error("Can't replace properties file\n" + ex.getMessage());
-                }
-                break;
-            default:
-                break;
-        }
-    }
+
 
     private static void resetGrid() {
         Process p = null;
@@ -211,5 +173,9 @@ public class Executor {
             e.printStackTrace();
         }
         logger.info("RESET GRID Completed");
+    }
+
+    private void heckThreadsAndRestart(){
+        //TODO
     }
 }
