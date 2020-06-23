@@ -202,7 +202,7 @@ public class ActorInsta implements IActor {
                 closeSession();
                 try {
                     logger.info("Wait some time after crash");
-                    TimeUnit.MINUTES.sleep(5);
+                    TimeUnit.MINUTES.sleep(3);
                 } catch (InterruptedException e) {
                     logger.error("Can't sleep\n" + e.getMessage());
                 }
