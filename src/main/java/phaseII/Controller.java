@@ -104,7 +104,7 @@ public class Controller implements IController, Runnable {
     public void proceedAction(AbstractMap.SimpleEntry<String, ActorActions> currentAction) {
         switch (currentAction.getValue()){
             case STATUS:
-                String statusMessage = name + " STATUS for ALL\n";
+                String statusMessage = name + "\nSTATUS for ALL\n";
                 statusMessage += getStatusForAll();
                 EmailService.generateAndSendEmail(statusMessage);
                 break;

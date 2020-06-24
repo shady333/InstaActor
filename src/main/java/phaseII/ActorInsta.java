@@ -101,7 +101,7 @@ public class ActorInsta implements IActor {
                 + "\nActivated : " + isEnabled() + ";\n"
                 + "Is Running now: " + isActive() + "\n"
                 + "Completed runs: " + executionCounter + "\n"
-                + "Latest run duration (min): " + getExecutionDuration();
+                + "Latest run duration (min): " + getExecutionDuration() + "\n\n";
     }
 
     @Override
