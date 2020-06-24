@@ -15,4 +15,6 @@ public interface IActor {
     boolean isActive();
 
     void activate();
+
+    String getActorStatusInfo();
 }

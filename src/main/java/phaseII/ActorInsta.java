@@ -80,7 +80,6 @@ public class ActorInsta implements IActor {
         followedCount = 0;
         executionCounter = 0;
         creationDate = new Date();
-        startTime = LocalDateTime.now();
         emailer = new Emailer();
         isEnabled.set(true);
     }
@@ -94,6 +93,15 @@ public class ActorInsta implements IActor {
     public void activate() {
         logger.info(getNameForLog() + "Activating");
         shouldRun(true);
+    }
+
+    @Override
+    public String getActorStatusInfo() {
+        return getName()
+                + "\nActivated : " + isEnabled() + ";\n"
+                + "Is Running now: " + isActive() + "\n"
+                + "Completed runs: " + executionCounter + "\n"
+                + "Latest run duration (min): " + getExecutionDuration();
     }
 
     @Override
@@ -128,16 +136,12 @@ public class ActorInsta implements IActor {
         defectedTags = defectedTags.stream()
                 .distinct()
                 .collect(Collectors.toList());
-
         allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
         allTags = allTags.stream()
                 .distinct()
                 .collect(Collectors.toList());
-
         allTags.removeAll(defectedTags);
-
         completedTags = new ArrayList<>();
-
         sleep(5000);
     }
 
@@ -167,7 +171,7 @@ public class ActorInsta implements IActor {
     }
 
     public void start() {
-
+        startTime = LocalDateTime.now();
         wasInterrupted = false;
         isCompleted = false;
         isRunning.set(true);
@@ -183,7 +187,7 @@ public class ActorInsta implements IActor {
             catch (AssertionError err){
                 logger.error(getNameForLog() + " ASSERTION ERROR \n"
                     + err.getMessage());
-                emailer.generateAndSendEmail(getNameForLog() + err.getMessage(), screenshot("tmp/crash/assertion_error.png"));
+                //emailer.generateAndSendEmail(getNameForLog() + err.getMessage(), screenshot("tmp/crash/assertion_error.png"));
                 crashesCount++;
             }
             catch (InstaActorBreakExecutionException executionException){
@@ -197,7 +201,7 @@ public class ActorInsta implements IActor {
             }
             catch (Exception ex){
                 logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
-                emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
+                //emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
                 crashesCount++;
                 closeSession();
                 try {
@@ -210,7 +214,7 @@ public class ActorInsta implements IActor {
             finally {
                 closeSession();
                 if(crashesOverExpected()){
-                    emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
+                    //emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
                     //deactivate();
                     isRunning.set(false);
                     crashesCount = 0;
@@ -228,6 +232,7 @@ public class ActorInsta implements IActor {
                 logger.error("Can't sleep\n" + e.getMessage());
             }
         }
+        endTime = LocalDateTime.now();
         isRunning.set(false);
     }
 
@@ -243,15 +248,12 @@ public class ActorInsta implements IActor {
                 followAccountFromYourFeed();
                 reactionsCounter = 0;
             }
-
             if (!completedTags.contains(searchTag)) {
-
                 if (searchByTag(searchTag)) {
                     interactWithPosts();
                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                     mouseMoveToElementAndClick(closeButton);
                 }
-
                 completedTags.add(searchTag);
             }
             reactionsCounter++;
@@ -275,17 +277,6 @@ public class ActorInsta implements IActor {
 
     private void sendStatusAfterCompletion() {
         emailer.generateAndSendEmail(getNameForLog() + "Execution Completed." + generateStatusForEmail());
-    }
-
-    private void setRandomPostsCountValue(){
-        int values = (prop.getMaxPostsCount() > 10) ? (prop.getMaxPostsCount()-10) : 10;
-//        return ThreadLocalRandom.current().nextInt(values, prop.getMaxPostsCount() + 10);
-        int posts = 10;
-        Random random = new Random();
-        if(random.nextBoolean())
-            prop.setMaxPostsCount(ThreadLocalRandom.current().nextInt(values, prop.getMaxPostsCount() + 10) + 5);
-        else
-            prop.setMaxPostsCount(ThreadLocalRandom.current().nextInt(values, prop.getMaxPostsCount() + 10) - 5);
     }
 
     private void  interactWithPosts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
@@ -337,19 +328,13 @@ public class ActorInsta implements IActor {
         }
     }
 
-    public boolean wasInterrupted() {
-        return wasInterrupted;
-    }
-
     private void addCommentToPost() throws InstaActorBreakExecutionException {
             try {
                 String commentText = InstaActorComments.generateComment(currentPostType);
                 logger.debug(getNameForLog() + "Trying to add comment: " + commentText);
                 sleep(getRandomViewTimeout());
-
                 $(By.cssSelector("article textarea")).val(commentText);
                 mouseMoveToElementAndClick($(By.xpath("//button[attribute::type='submit']")));
-
                 if (suspectedActionsDetectorOnAction()) {
                     logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
                     resetCurrentPostStatus();
@@ -362,16 +347,13 @@ public class ActorInsta implements IActor {
             } catch (Error err) {
                 logger.error(getNameForLog() + "ERROR on commenting" + err.getLocalizedMessage());
             }
-
     }
 
     private void addLikeToPost() throws InstaActorBreakExecutionException {
         if(InstaActorElements.getPostLikeButton() != null){
             logger.info(getNameForLog() + "Like post");
             sleep(getRandomViewTimeout());
-
             mouseMoveToElementAndClick(InstaActorElements.getPostLikeButton());
-
             if(suspectedActionsDetectorOnAction()){
                 logger.info(getNameForLog() + "DISABLE LIKE AND COMMENTS ACTION!!!");
                 resetCurrentPostStatus();
@@ -401,12 +383,10 @@ public class ActorInsta implements IActor {
                     +"<b>Post Url:</b> " + currentPostUrl + "\n", screenshot("tmp/crash/blocked_action_error.png"));
             buttonReport.get(0).click();
             sleep(10000);
-
             LocalDateTime triggerTime =
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()),
                             TimeZone.getDefault().toZoneId());
             prop.setBlockActionPoint(getName(), triggerTime.toString());
-
             throw new InstaActorBreakExecutionException("Like or Comment block. STOP!");
         }
         return false;
@@ -506,7 +486,6 @@ public class ActorInsta implements IActor {
             mouseMoveToElementAndClick($(By.xpath("//span[contains(text(),'Search')]")));
             searchBox.val("#" + searchTag);
             $(By.xpath("//div[contains(@class,'SearchClear')]")).waitUntil(Condition.visible, 10000);
-
             if ($$(By.xpath("//a[attribute::href=\"/explore/tags/" + searchTag + "/\"]//span[contains(.,\"" + searchTag + "\")]")).size() > 0) {
                 $$(By.xpath("//a[attribute::href=\"/explore/tags/" + searchTag + "/\"]//span[contains(.,\"" + searchTag + "\")]")).get(0).click();
             }
@@ -605,7 +584,6 @@ public class ActorInsta implements IActor {
         String combinedChars = capitalCaseLetters + lowerCaseLetters + specialCharacters + numbers;
         Random random = new Random();
         char[] password = new char[length];
-
         password[0] = lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length()));
         password[1] = capitalCaseLetters.charAt(random.nextInt(capitalCaseLetters.length()));
         password[2] = specialCharacters.charAt(random.nextInt(specialCharacters.length()));
@@ -643,7 +621,7 @@ public class ActorInsta implements IActor {
             closeWebDriver();
         }
         finally {
-//            driver = null;
+            driver = null;
             logger.debug(getNameForLog() + "Waiting for drivers close");
             sleep(30000);
         }
@@ -678,9 +656,7 @@ public class ActorInsta implements IActor {
     }
 
     private void initSession() {
-
         logger.info(getNameForLog() + "Create WebDriver session");
-
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
                 UnexpectedAlertBehaviour.IGNORE);
@@ -689,7 +665,6 @@ public class ActorInsta implements IActor {
         chromeOptions.addArguments("--enable-automation");
         if(!StringUtils.isEmpty(prop.getProxyValue()))
             chromeOptions.addArguments("--proxy-server=" +  prop.getProxyValue());
-
         if(!prop.isDebugMode()) {
             String seleniumHub = prop.getHub();
             String seleniumHubPort = String.valueOf(prop.getHubPort());
@@ -790,10 +765,6 @@ public class ActorInsta implements IActor {
         return status;
     }
 
-    private void checkStatus() throws InstaActorExecutionException {
-        ;
-    }
-
     private int getRandomViewTimeout(){
         return ThreadLocalRandom.current().nextInt(prop.getViewMinDelay(), prop.getViewMaxDelay() + 1);
     }
@@ -819,7 +790,6 @@ public class ActorInsta implements IActor {
     }
 
     private void followAccounts() throws InstaActorBreakExecutionException {
-
         waitSomeTime(getRandomViewTimeout());
         ElementsCollection followButtons = $$(By.xpath("//button[text()='Follow']"));
         int maxItems = (followButtons.size()>5)?5:followButtons.size();
@@ -842,5 +812,4 @@ public class ActorInsta implements IActor {
         }
         logger.info(getNameForLog() + "SKIP. Review and follow accounts");
     }
-
 }

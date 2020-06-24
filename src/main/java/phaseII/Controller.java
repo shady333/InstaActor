@@ -29,8 +29,7 @@ public class Controller implements IController, Runnable {
     public String getStatusForAll(){
         final String[] status = {""};
         registeredActors.forEach(item -> {
-            status[0] += item.getName() + "\nActivated : " + item.isEnabled() + ";\n"
-            + "Is Running now: " + item.isActive() + "\n";
+            status[0] += item.getActorStatusInfo();
         });
         return status[0];
     }

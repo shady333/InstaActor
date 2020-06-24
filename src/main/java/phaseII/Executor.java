@@ -115,9 +115,7 @@ public class Executor {
                 wasStopped = false;
             }
 
-//
             logger.info("Tick from executor");
-//
             try {
                 currentAction = emailerService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
             } catch (MessagingException e) {
