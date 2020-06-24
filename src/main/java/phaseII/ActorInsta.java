@@ -733,7 +733,10 @@ public class ActorInsta implements IActor {
     }
 
     private long getExecutionDuration(){
-        return ChronoUnit.MINUTES.between(startTime, (endTime == null) ? LocalDateTime.now() : endTime);
+        if(startTime != null)
+            return ChronoUnit.MINUTES.between(startTime, (endTime == null) ? LocalDateTime.now() : endTime);
+        else
+            return 0;
     }
 
     private String generateStatusForEmail(){

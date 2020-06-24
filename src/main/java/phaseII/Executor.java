@@ -79,57 +79,62 @@ public class Executor {
             }
         });
 
-        while(true){
-            if(!Utilities.isInternetConnection() && !wasStopped){
+        while(true) {
+            try{
+                if (!Utilities.isInternetConnection() && !wasStopped) {
 
-                try {
-                    p = Runtime.getRuntime().exec("bash stopGrid.sh");
+                    try {
+                        p = Runtime.getRuntime().exec("bash stopGrid.sh");
+                        p.waitFor();
+
+                        logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
+                        controllersCollection.stream().forEach(controller -> {
+                            controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+                        });
+
+                        wasStopped = true;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+                if (wasStopped && Utilities.isInternetConnection()) {
+
+
+                    try {
+                        p = Runtime.getRuntime().exec("bash startGrid.sh");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     p.waitFor();
 
-                    logger.warn("STOPPING ALL ACTORS. Out of Internet connection.");
+                    logger.warn("START ALL ACTORS. Internet connection resumed.");
                     controllersCollection.stream().forEach(controller -> {
-                        controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.STOP));
+                        controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
+                    });
+                    wasStopped = false;
+                }
+
+                logger.info("Tick from executor");
+                try {
+                    currentAction = emailerService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
+                } catch (MessagingException e) {
+                    e.printStackTrace();
+                }
+                if (currentAction != null && currentAction.getValue() != ActorActions.UNDEFINED) {
+                    logger.info("Received action:" + currentAction.getKey() + "; " + currentAction.getValue());
+
+                    AbstractMap.SimpleEntry<String, ActorActions> finalCurrentAction = currentAction;
+                    controllersCollection.stream().forEach(controller -> {
+                        controller.proceedAction(finalCurrentAction);
                     });
 
-                    wasStopped = true;
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    lastActionDate = new Date();
                 }
-
             }
-
-            if(wasStopped && Utilities.isInternetConnection()){
-
-
-                try {
-                    p = Runtime.getRuntime().exec("bash startGrid.sh");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                p.waitFor();
-
-                logger.warn("START ALL ACTORS. Internet connection resumed.");
-                controllersCollection.stream().forEach(controller -> {
-                    controller.proceedAction(new AbstractMap.SimpleEntry<>("ALL", ActorActions.START));
-                });
-                wasStopped = false;
-            }
-
-            logger.info("Tick from executor");
-            try {
-                currentAction = emailerService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
-            } catch (MessagingException e) {
-                e.printStackTrace();
-            }
-            if(currentAction != null && currentAction.getValue() != ActorActions.UNDEFINED){
-                logger.info("Received action:" + currentAction.getKey() + "; " + currentAction.getValue());
-
-                AbstractMap.SimpleEntry<String, ActorActions> finalCurrentAction = currentAction;
-                controllersCollection.stream().forEach(controller -> {
-                    controller.proceedAction(finalCurrentAction);
-                });
-
-                lastActionDate = new Date();
+            catch (Exception ex){
+                logger.error("Executor: " + ex.getMessage());
             }
             currentAction = null;
 
