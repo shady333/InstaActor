@@ -141,7 +141,7 @@ public class ActorInsta implements IActor {
                 .distinct()
                 .collect(Collectors.toList());
         allTags.removeAll(defectedTags);
-        completedTags = new ArrayList<>();
+
         sleep(5000);
     }
 
@@ -174,6 +174,7 @@ public class ActorInsta implements IActor {
         startTime = LocalDateTime.now();
         wasInterrupted = false;
         isCompleted = false;
+        completedTags = new ArrayList<>();
         isRunning.set(true);
         while (isEnabled.get() && Utilities.isInternetConnection()) {
             logger.info(getNameForLog() + "Running: " + this.name);
