@@ -61,7 +61,7 @@ public class Executor {
                     e.printStackTrace();
                 }
             }
-        }, 0, 1, TimeUnit.HOURS);
+        }, 0, 6, TimeUnit.HOURS);
 
         controllersCollection.forEach(controller -> {
             try{
