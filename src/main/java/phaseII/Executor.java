@@ -135,14 +135,13 @@ public class Executor {
             }
             catch (Exception ex){
                 logger.error("Executor: " + ex.getMessage());
+                emailerService.generateAndSendEmail("EXECUTOR EXCEPTION:\n" + ex.getMessage());
             }
             currentAction = null;
 
             TimeUnit.SECONDS.sleep(30);
         }
     }
-
-
 
     private static void resetGrid() {
         Process p = null;
@@ -176,9 +175,6 @@ public class Executor {
             e.printStackTrace();
         }
         logger.info("RESET GRID Completed");
-    }
-
-    private void heckThreadsAndRestart(){
-        //TODO
+        emailerService.generateAndSendEmail("RESET GRID Completed\n");
     }
 }

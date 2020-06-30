@@ -132,15 +132,15 @@ public class ActorInsta implements IActor {
         likedPosts = likedPosts.stream()
                 .distinct()
                 .collect(Collectors.toList());
-        defectedTags.addAll(Utilities.getAllTags(getDefectedTagsFilePath()));
-        defectedTags = defectedTags.stream()
-                .distinct()
-                .collect(Collectors.toList());
+//        defectedTags.addAll(Utilities.getAllTags(getDefectedTagsFilePath()));
+//        defectedTags = defectedTags.stream()
+//                .distinct()
+//                .collect(Collectors.toList());
         allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
         allTags = allTags.stream()
                 .distinct()
                 .collect(Collectors.toList());
-        allTags.removeAll(defectedTags);
+//        allTags.removeAll(defectedTags);
 
         sleep(5000);
     }
@@ -175,6 +175,7 @@ public class ActorInsta implements IActor {
         wasInterrupted = false;
         isCompleted = false;
         completedTags = new ArrayList<>();
+        defectedTags = new ArrayList<>();
         isRunning.set(true);
         while (isEnabled.get() && Utilities.isInternetConnection()) {
             logger.info(getNameForLog() + "Running: " + this.name);
@@ -249,7 +250,7 @@ public class ActorInsta implements IActor {
                 followAccountFromYourFeed();
                 reactionsCounter = 0;
             }
-            if (!completedTags.contains(searchTag)) {
+            if (!completedTags.contains(searchTag) && !defectedTags.contains(searchTag)) {
                 if (searchByTag(searchTag)) {
                     interactWithPosts();
                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
