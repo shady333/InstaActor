@@ -1,5 +1,6 @@
-package com.dudar;
+package com.dudar.insta;
 
+import com.dudar.PostType;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;

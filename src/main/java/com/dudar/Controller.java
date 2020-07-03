@@ -1,4 +1,4 @@
-package phaseII;
+package com.dudar;
 
 import com.dudar.utils.services.ActorActions;
 import com.dudar.utils.services.EmailService;

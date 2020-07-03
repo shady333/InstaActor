@@ -1,8 +1,4 @@
-package phaseII;
-
-import com.dudar.utils.services.ActorActions;
-
-import java.util.AbstractMap;
+package com.dudar;
 
 public interface IController {
     void registerActor(String actorName);

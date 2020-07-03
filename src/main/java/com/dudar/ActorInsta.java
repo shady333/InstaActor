@@ -1,12 +1,12 @@
-package phaseII;
+package com.dudar;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
-import com.dudar.*;
+import com.dudar.insta.*;
 import com.dudar.utils.Utilities;
-import com.dudar.utils.services.Emailer;
+import com.dudar.utils.services.EmailService;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -20,6 +20,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
+
 import java.util.stream.Collectors;
 
 import java.io.FileWriter;
@@ -72,7 +73,7 @@ public class ActorInsta implements IActor {
     private LocalDateTime endTime;
     private PostType currentPostType = PostType.UNDEFINED;
 
-    private Emailer emailer;
+//    private Emailer emailer;
 
     public ActorInsta(String name){
         this.name = name;
@@ -80,7 +81,7 @@ public class ActorInsta implements IActor {
         followedCount = 0;
         executionCounter = 0;
         creationDate = new Date();
-        emailer = new Emailer();
+        //emailer = new Emailer();
         isEnabled.set(true);
     }
 
@@ -278,7 +279,7 @@ public class ActorInsta implements IActor {
     }
 
     private void sendStatusAfterCompletion() {
-        emailer.generateAndSendEmail(getNameForLog() + "Execution Completed." + generateStatusForEmail());
+        EmailService.generateAndSendEmail(getNameForLog() + "Execution Completed." + generateStatusForEmail());
     }
 
     private void  interactWithPosts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
@@ -379,7 +380,7 @@ public class ActorInsta implements IActor {
         ElementsCollection buttonReport = $$(By.xpath("//button[contains(text(),'Report a Problem')]"));
         if(buttonReport.size() > 0){
             logger.warn(getNameForLog() + "!!!WARNING!!!");
-            emailer.generateAndSendEmail(getNameForLog() + "Like or Comment action was blocked by Instagram service\n"
+            EmailService.generateAndSendEmail(getNameForLog() + "Like or Comment action was blocked by Instagram service\n"
                     + "<b>LIKE and COMMENT option will be disabled for current instance: " + name + "\n"
                     +"<b>Tag name:</b> " + currentTag + "\n"
                     +"<b>Post Url:</b> " + currentPostUrl + "\n", screenshot("tmp/crash/blocked_action_error.png"));

@@ -25,10 +25,6 @@ public class EmailService {
 
     final static Logger logger = Logger.getLogger(EmailService.class);
 
-    static Properties mailServerProperties;
-    static Session getMailSession;
-    static MimeMessage generateMailMessage;
-
     /***
      * Expected email message subject in format: "ACTION_START ACTOR_MYACTOR any other characters"
      * @param sender
@@ -228,107 +224,5 @@ public class EmailService {
         } catch (MessagingException mex) {
             mex.printStackTrace();
         }
-//
-//
-//        int retries = 0;
-//        while(retries < 3) {
-//            retries++;
-//            try {
-//                logger.debug("setup Mail Server Properties..");
-//                mailServerProperties = System.getProperties();
-//                mailServerProperties.put("mail.smtp.port", "587");
-//                mailServerProperties.put("mail.smtp.auth", "true");
-//                mailServerProperties.put("mail.smtp.starttls.enable", "true");
-//                mailServerProperties.put("mail.smtp.starttls.required", "true");
-//                mailServerProperties.put("mail.socketFactory.port", "587");
-//                mailServerProperties.put("mail.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-//                mailServerProperties.put("mail.socketFactory.fallback", "false");
-//                logger.debug("Mail Server Properties have been setup successfully...");
-//
-//                logger.debug("get Mail Session..");
-//                getMailSession = Session.getDefaultInstance(mailServerProperties, null);
-//                generateMailMessage = new MimeMessage(getMailSession);
-//                generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(Utilities.getEmailTo()));
-//                generateMailMessage.setSubject(Utilities.getEmailSubject());
-//                generateMailMessage.setContent(emailBody + "<br><br> Regards, <br>InstaActor", "text/html");
-//                logger.debug("Mail Session has been created successfully...");
-//
-//                logger.debug("Get Session and Send mail");
-//                Transport transport = getMailSession.getTransport("smtp");
-//                transport.connect("smtp.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
-//                transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
-//                transport.close();
-//                logger.debug("Mail was sent successfully...");
-//                return;
-//            } catch (MessagingException ex) {
-//                logger.error("Can't send Email");
-//                logger.error(ex.getMessage());
-//            }
-//        }
-
     }
-
-//    public static void generateAndSendEmail(String emailBody, String filePathAttachment){
-//        int retries = 0;
-//        while(retries < 3) {
-//            retries++;
-//            try {
-//
-//                logger.debug("setup Mail Server Properties..");
-//                mailServerProperties = System.getProperties();
-//                mailServerProperties.put("mail.smtp.port", "587");
-//                mailServerProperties.put("mail.smtp.auth", "true");
-//                mailServerProperties.put("mail.smtp.starttls.enable", "true");
-//                mailServerProperties.put("mail.smtp.starttls.required", "true");
-//                mailServerProperties.put("mail.socketFactory.port", "587");
-//                mailServerProperties.put("mail.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-//                mailServerProperties.put("mail.socketFactory.fallback", "false");
-//                logger.debug("Mail Server Properties have been setup successfully...");
-//
-//                logger.debug("get Mail Session..");
-//                getMailSession = Session.getDefaultInstance(mailServerProperties, null);
-//                generateMailMessage = new MimeMessage(getMailSession);
-//                generateMailMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(Utilities.getEmailTo()));
-//                generateMailMessage.setSubject(Utilities.getEmailSubject());
-//
-//
-//                // Create the message part
-//                BodyPart messageBodyPart = new MimeBodyPart();
-//
-//                // Now set the actual message
-//                messageBodyPart.setText(emailBody + "<br><br> Regards, <br>InstaActor");
-//
-//                // Create a multipar message
-//                Multipart multipart = new MimeMultipart();
-//
-//                // Set text message part
-//                multipart.addBodyPart(messageBodyPart);
-//
-//                // Part two is attachment
-//                messageBodyPart = new MimeBodyPart();
-//                DataSource source = new FileDataSource(filePathAttachment);
-//                messageBodyPart.setDataHandler(new DataHandler(source));
-//                messageBodyPart.setFileName(filePathAttachment);
-//                multipart.addBodyPart(messageBodyPart);
-//
-//                // Send the complete message parts
-//                generateMailMessage.setContent(multipart, "text/html");
-//
-//                logger.debug("Mail Session has been created successfully...");
-//
-//                logger.debug("Get Session and Send mail");
-//                Transport transport = getMailSession.getTransport("smtp");
-//                transport.connect("smtp.gmail.com", Utilities.getEmailUserName(), Utilities.getEmailUserPassword());
-//                transport.sendMessage(generateMailMessage, generateMailMessage.getAllRecipients());
-//                transport.close();
-//                logger.debug("Mail was sent successfully...");
-//                return;
-//            } catch (MessagingException ex) {
-//                logger.error("Can't send Email");
-//                logger.error(ex.getMessage());
-//            }
-//        }
-//
-//    }
-
 }

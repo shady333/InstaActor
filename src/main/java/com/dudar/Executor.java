@@ -1,17 +1,12 @@
-package phaseII;
+package com.dudar;
 
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.ActorActions;
 import com.dudar.utils.services.EmailService;
-import com.dudar.utils.services.Emailer;
 import org.apache.log4j.Logger;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,7 +19,7 @@ public class Executor {
 
     final static Logger logger = Logger.getLogger(Executor.class);
     static List<Controller> controllersCollection = new ArrayList<>();
-    static Emailer emailerService = new Emailer();
+//    static Emailer emailerService = new Emailer();
 
     public static void main(String[] args) throws InterruptedException {
         AbstractMap.SimpleEntry<String, ActorActions> currentAction = null;
@@ -118,7 +113,7 @@ public class Executor {
 
                 logger.info("Tick from executor");
                 try {
-                    currentAction = emailerService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
+                    currentAction = EmailService.getActionFromEmail(Utilities.getActionsUserEmail(), lastActionDate);
                 } catch (MessagingException e) {
                     e.printStackTrace();
                 }
@@ -135,7 +130,7 @@ public class Executor {
             }
             catch (Exception ex){
                 logger.error("Executor: " + ex.getMessage());
-                emailerService.generateAndSendEmail("EXECUTOR EXCEPTION:\n" + ex.getMessage());
+                EmailService.generateAndSendEmail("EXECUTOR EXCEPTION:\n" + ex.getMessage());
             }
             currentAction = null;
 
@@ -175,6 +170,6 @@ public class Executor {
             e.printStackTrace();
         }
         logger.info("RESET GRID Completed");
-        emailerService.generateAndSendEmail("RESET GRID Completed\n");
+        EmailService.generateAndSendEmail("RESET GRID Completed\n");
     }
 }

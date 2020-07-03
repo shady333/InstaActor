@@ -1,4 +1,4 @@
-package com.dudar;
+package com.dudar.insta;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;

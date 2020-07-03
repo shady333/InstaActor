@@ -1,4 +1,4 @@
-package com.dudar;
+package com.dudar.insta;
 
 public class InstaActorBreakExecutionException extends Exception {
     public InstaActorBreakExecutionException(){};
