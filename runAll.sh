@@ -7,4 +7,4 @@ mvn clean compile
 
 #Phase 2. Start service
 echo "starting service"
-mvn exec:java -Dexec.mainClass=phaseII.Executor -Dlog4j.configuration=file:src/main/resources/log4j.properties
+mvn exec:java -Dexec.mainClass=com.dudar.Executor -Dlog4j.configuration=file:src/main/resources/log4j.properties
