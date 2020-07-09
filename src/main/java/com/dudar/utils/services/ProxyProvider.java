@@ -30,9 +30,4 @@ public class ProxyProvider {
         }
         return null;
     }
-
-    public static void main(String[] args){
-        ProxyProvider pp = new ProxyProvider();
-        System.out.println(pp.getProxyAddr());
-    }
 }
