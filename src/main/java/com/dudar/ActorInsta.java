@@ -666,7 +666,7 @@ public class ActorInsta implements IActor {
         chromeOptions.addArguments("--enable-automation");
         if(!StringUtils.isEmpty(prop.getProxyValue())) {
 //TODO fix in future
-            //            String proxy_val = ProxyProvider.getProxyAddr();
+//            String proxy_val = ProxyProvider.getProxyAddr();
 //            if(proxy_val != null) {
 //                logger.debug(getNameForLog() + "SETUP PROXY: " + proxy_val);
 //                Proxy proxy = new Proxy();
