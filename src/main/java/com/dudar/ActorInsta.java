@@ -7,14 +7,12 @@ import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.insta.*;
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.EmailService;
+import com.dudar.utils.services.ProxyProvider;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.openqa.selenium.By;
-import org.openqa.selenium.ElementClickInterceptedException;
-import org.openqa.selenium.UnexpectedAlertBehaviour;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
@@ -666,8 +664,16 @@ public class ActorInsta implements IActor {
         chromeOptions.setHeadless(true);
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--enable-automation");
-        if(!StringUtils.isEmpty(prop.getProxyValue()))
-            chromeOptions.addArguments("--proxy-server=" +  prop.getProxyValue());
+        if(!StringUtils.isEmpty(prop.getProxyValue())) {
+            String proxy_val = ProxyProvider.getProxyAddr();
+            if(proxy_val != null) {
+                logger.debug(getNameForLog() + "SETUP PROXY: " + proxy_val);
+                Proxy proxy = new Proxy();
+                proxy.setHttpProxy(proxy_val);
+                proxy.setSslProxy(proxy_val);
+                chromeOptions.setProxy(proxy);
+            }
+        }
         if(!prop.isDebugMode()) {
             String seleniumHub = prop.getHub();
             String seleniumHubPort = String.valueOf(prop.getHubPort());
@@ -683,7 +689,7 @@ public class ActorInsta implements IActor {
             }
             try {
                 driver = new RemoteWebDriver(new URL(gridHubUrl+"/wd/hub"), chromeOptions);
-            } catch (MalformedURLException e) {
+            } catch (Exception e) {
                 logger.error(getNameForLog() + "!!!Can't init DRIVER");
                 logger.error(getNameForLog() + "Error message: " + e.getLocalizedMessage());
                 driver = null;
