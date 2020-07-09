@@ -665,14 +665,15 @@ public class ActorInsta implements IActor {
         chromeOptions.addArguments("--no-sandbox");
         chromeOptions.addArguments("--enable-automation");
         if(!StringUtils.isEmpty(prop.getProxyValue())) {
-            String proxy_val = ProxyProvider.getProxyAddr();
-            if(proxy_val != null) {
-                logger.debug(getNameForLog() + "SETUP PROXY: " + proxy_val);
-                Proxy proxy = new Proxy();
-                proxy.setHttpProxy(proxy_val);
-                proxy.setSslProxy(proxy_val);
-                chromeOptions.setProxy(proxy);
-            }
+//TODO fix in future
+            //            String proxy_val = ProxyProvider.getProxyAddr();
+//            if(proxy_val != null) {
+//                logger.debug(getNameForLog() + "SETUP PROXY: " + proxy_val);
+//                Proxy proxy = new Proxy();
+//                proxy.setHttpProxy(proxy_val);
+//                proxy.setSslProxy(proxy_val);
+//                chromeOptions.setProxy(proxy);
+//            }
         }
         if(!prop.isDebugMode()) {
             String seleniumHub = prop.getHub();
