@@ -7,7 +7,6 @@ import com.codeborne.selenide.WebDriverRunner;
 import com.dudar.insta.*;
 import com.dudar.utils.Utilities;
 import com.dudar.utils.services.EmailService;
-import com.dudar.utils.services.ProxyProvider;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -71,15 +69,12 @@ public class ActorInsta implements IActor {
     private LocalDateTime endTime;
     private PostType currentPostType = PostType.UNDEFINED;
 
-//    private Emailer emailer;
-
     public ActorInsta(String name){
         this.name = name;
         crashesCount = 0;
         followedCount = 0;
         executionCounter = 0;
         creationDate = new Date();
-        //emailer = new Emailer();
         isEnabled.set(true);
     }
 
@@ -131,17 +126,10 @@ public class ActorInsta implements IActor {
         likedPosts = likedPosts.stream()
                 .distinct()
                 .collect(Collectors.toList());
-//        defectedTags.addAll(Utilities.getAllTags(getDefectedTagsFilePath()));
-//        defectedTags = defectedTags.stream()
-//                .distinct()
-//                .collect(Collectors.toList());
         allTags = Utilities.getAllTags("data/" + name + "_tags.csv");
         allTags = allTags.stream()
                 .distinct()
                 .collect(Collectors.toList());
-//        allTags.removeAll(defectedTags);
-
-        sleep(5000);
     }
 
     @Override
@@ -188,7 +176,6 @@ public class ActorInsta implements IActor {
             catch (AssertionError err){
                 logger.error(getNameForLog() + " ASSERTION ERROR \n"
                     + err.getMessage());
-                //emailer.generateAndSendEmail(getNameForLog() + err.getMessage(), screenshot("tmp/crash/assertion_error.png"));
                 crashesCount++;
             }
             catch (InstaActorBreakExecutionException executionException){
@@ -202,12 +189,11 @@ public class ActorInsta implements IActor {
             }
             catch (Exception ex){
                 logger.error("UNEXPECTED EXCEPTION: " + ex.getMessage());
-                //emailer.generateAndSendEmail(getNameForLog() + ex.getMessage(), screenshot("tmp/crash/exception_error.png"));
                 crashesCount++;
                 closeSession();
                 try {
                     logger.info("Wait some time after crash");
-                    TimeUnit.MINUTES.sleep(3);
+                    TimeUnit.MINUTES.sleep(1);
                 } catch (InterruptedException e) {
                     logger.error("Can't sleep\n" + e.getMessage());
                 }
@@ -215,8 +201,6 @@ public class ActorInsta implements IActor {
             finally {
                 closeSession();
                 if(crashesOverExpected()){
-                    //emailer.generateAndSendEmail(getNameForLog() + "Crashes over expected", screenshot("tmp/crash/crash_error.png"));
-                    //deactivate();
                     isRunning.set(false);
                     crashesCount = 0;
                     return;
@@ -228,7 +212,7 @@ public class ActorInsta implements IActor {
 
             }
             try {
-                TimeUnit.SECONDS.sleep(5);
+                TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 logger.error("Can't sleep\n" + e.getMessage());
             }
@@ -259,7 +243,6 @@ public class ActorInsta implements IActor {
             }
             reactionsCounter++;
         }
-        someActions();
         followSuggestedAccounts();
     }
 
@@ -283,7 +266,7 @@ public class ActorInsta implements IActor {
     private void  interactWithPosts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
         String rootElement = "//div[contains(text(), 'Top posts')]/../..";
         $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
-        sleep(getRandomViewTimeout());
+//        sleep(getRandomViewTimeout());
         WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
         mouseMoveToElementAndClick(firstPostToLike);
         int maxPosts = getRandomPostsCountToView();
@@ -299,7 +282,7 @@ public class ActorInsta implements IActor {
                     logger.info(getNameForLog() + "SKIP - " + currentPostUrl);
                     continue;
                 }
-                sleep(getRandomViewTimeout());
+//                sleep(getRandomViewTimeout());
                 detectPostTypeAndAct();
                 if(shouldLikePost()) {
                     if (!likedPosts.contains(currentPostUrl)) {
@@ -383,7 +366,7 @@ public class ActorInsta implements IActor {
                     +"<b>Tag name:</b> " + currentTag + "\n"
                     +"<b>Post Url:</b> " + currentPostUrl + "\n", screenshot("tmp/crash/blocked_action_error.png"));
             buttonReport.get(0).click();
-            sleep(10000);
+            sleep(5000);
             LocalDateTime triggerTime =
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()),
                             TimeZone.getDefault().toZoneId());
@@ -602,35 +585,19 @@ public class ActorInsta implements IActor {
         }
     }
 
-    private void someActions() {
-        try {
-            logger.info(getNameForLog() + "Start doing smth.");
-            TimeUnit.SECONDS.sleep(10);
-            logger.info(getNameForLog() + "End doing smth.");
-        } catch (InterruptedException e) {
-            logger.error("Can't sleep\n" + e.getMessage());
-        }
-    }
-
     private void closeSession() {
         try{
-            //writeListToFile(defectedTags, getDefectedTagsFilePath());
             writeListToFile(likedPosts, getLikedPostsFilePath());
             writeListToFile(commentedPosts, getCommentedPostsFilePath());
-            sleep(10000);
+            sleep(1000);
             logger.info(getNameForLog() + "Clear WebDriver session");
             closeWebDriver();
         }
         finally {
             driver = null;
             logger.debug(getNameForLog() + "Waiting for drivers close");
-            sleep(30000);
+            sleep(5000);
         }
-    }
-
-    @NotNull
-    private String getDefectedTagsFilePath() {
-        return "data/results/"+name+"_defectedTags.csv";
     }
 
     @NotNull
@@ -735,7 +702,7 @@ public class ActorInsta implements IActor {
             logger.debug(getNameForLog() + msg + " wait duration - " + duration/1000 + " seconds.\n"
                     + ((currentPoint + duration) - System.currentTimeMillis())/1000 + " seconds left.");
             try {
-                Thread.sleep(5000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -789,7 +756,7 @@ public class ActorInsta implements IActor {
 
     private void followSuggestedAccounts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
         open("https://www.instagram.com/explore/people/suggested/");
-        sleep(10000);
+        sleep(5000);
         followAccounts();
     }
 

@@ -19,7 +19,6 @@ public class Executor {
 
     final static Logger logger = Logger.getLogger(Executor.class);
     static List<Controller> controllersCollection = new ArrayList<>();
-//    static Emailer emailerService = new Emailer();
 
     public static void main(String[] args) throws InterruptedException {
         AbstractMap.SimpleEntry<String, ActorActions> currentAction = null;
