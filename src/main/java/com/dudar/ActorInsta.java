@@ -229,7 +229,7 @@ public class ActorInsta implements IActor {
         int reactionsCounter = 0;
         for (String searchTag : allTags) {
             processedPosts.put(searchTag, new ArrayList());
-            if(reactionsCounter > ThreadLocalRandom.current().nextInt(3, 10)) {
+            if(reactionsCounter > ThreadLocalRandom.current().nextInt(5, 15)) {
                 followAccountFromYourFeed();
                 reactionsCounter = 0;
             }
@@ -702,7 +702,7 @@ public class ActorInsta implements IActor {
             logger.debug(getNameForLog() + msg + " wait duration - " + duration/1000 + " seconds.\n"
                     + ((currentPoint + duration) - System.currentTimeMillis())/1000 + " seconds left.");
             try {
-                Thread.sleep(500);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

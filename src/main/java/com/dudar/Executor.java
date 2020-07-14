@@ -28,16 +28,14 @@ public class Executor {
         boolean wasStopped = false;
 
         Runnable controller1 = new Controller("controller1");
-        Runnable controller2 = new Controller("controller2");
         ((Controller) controller1).registerActor("3dprint");
         ((Controller) controller1).registerActor("bricks");
         ((Controller) controller1).registerActor("legomini");
         ((Controller) controller1).registerActor("snail");
-        ((Controller) controller2).registerActor("neverold");
-        ((Controller) controller2).registerActor("inline");
+        ((Controller) controller1).registerActor("neverold");
+        ((Controller) controller1).registerActor("inline");
 
         controllersCollection.add((Controller) controller1);
-        controllersCollection.add((Controller) controller2);
 
         ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
         ses.scheduleAtFixedRate(new Runnable() {
@@ -139,6 +137,10 @@ public class Executor {
 
     private static void resetGrid() {
         Process p = null;
+
+        logger.info("Deleting build folder");
+        clearBuildFolder();
+
         logger.info("RESET GRID");
         try {
             p = Runtime.getRuntime().exec("bash stopGrid.sh");
@@ -170,5 +172,18 @@ public class Executor {
         }
         logger.info("RESET GRID Completed");
         EmailService.generateAndSendEmail("RESET GRID Completed\n");
+    }
+
+    static void clearBuildFolder(){
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec("rm -rf build");
+            p.waitFor();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
     }
 }
