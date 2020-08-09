@@ -18,6 +18,8 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.stream.Collectors;
 
 import java.io.FileWriter;
@@ -682,9 +684,26 @@ public class ActorInsta implements IActor {
         return false;
     }
 
+    private boolean isNightNow(){
+        try {
+            SimpleDateFormat parser = new SimpleDateFormat("HH:mm");
+            Date start = parser.parse("09:00");
+            Date end = parser.parse("23:00");
+            Date userDate = parser.parse(parser.format(new Date()));
+            if (userDate.after(end) && userDate.before(start)) {
+                return true;
+            }
+            return false;
+        } catch (ParseException e) {
+            logger.error("Can't detect is night or day");
+            return false;
+        }
+    }
+
     private void nigthModeCheck() throws InstaActorBreakExecutionException {
         if(prop.isNightMode()){
-            throw new InstaActorBreakExecutionException("Night mode is active.");
+            if(isNightNow())
+                throw new InstaActorBreakExecutionException("Night mode is active.");
         }
     }
 
