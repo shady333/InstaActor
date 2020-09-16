@@ -235,8 +235,10 @@ public class ActorInsta implements IActor {
                 followAccountFromYourFeed();
                 reactionsCounter = 0;
             }
+            reviewRecomended();
             if (!completedTags.contains(searchTag) && !defectedTags.contains(searchTag)) {
                 if (searchByTag(searchTag)) {
+                    navigateToFirstPostFromSearchResults();
                     interactWithPosts();
                     WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
                     mouseMoveToElementAndClick(closeButton);
@@ -246,6 +248,14 @@ public class ActorInsta implements IActor {
             reactionsCounter++;
         }
         followSuggestedAccounts();
+    }
+
+    private void reviewRecomended() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
+        open("https://www.instagram.com/explore/");
+        $$(By.xpath("//main//a")).get(0).click();
+        interactWithExplorePosts();
+        WebElement closeButton = InstaActorElements.getPostCloseButton().shouldBe(Condition.visible);
+        mouseMoveToElementAndClick(closeButton);
     }
 
     private int getRandomPostsCountToView(){
@@ -266,11 +276,6 @@ public class ActorInsta implements IActor {
     }
 
     private void  interactWithPosts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
-        String rootElement = "//div[contains(text(), 'Top posts')]/../..";
-        $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
-//        sleep(getRandomViewTimeout());
-        WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
-        mouseMoveToElementAndClick(firstPostToLike);
         int maxPosts = getRandomPostsCountToView();
         for(int i = 1; i <= maxPosts; i++){
             if(!isEnabled.get()){
@@ -312,6 +317,41 @@ public class ActorInsta implements IActor {
             if (!moveToNextPostIfAvailable())
                 break;
         }
+    }
+
+    private void  interactWithExplorePosts() throws InstaActorStopExecutionException, InstaActorBreakExecutionException {
+        int maxPosts = getRandomPostsCountToView();
+        for(int i = 1; i <= maxPosts; i++){
+            if(!isEnabled.get()){
+                throw new InstaActorStopExecutionException();
+            }
+            currentPostUrl = WebDriverRunner.url();
+            InstaActorElements.getPostCloseButton().shouldBe(Condition.visible).shouldBe(Condition.enabled);
+            if(InstaActorElements.getPostLikeButton()!=null){
+                detectPostTypeAndAct();
+                if(shouldLikePost()) {
+                    if (!likedPosts.contains(currentPostUrl)) {
+                        addLikeToPost();
+                    }
+                }
+                else
+                {
+                    logger.info("Skip post like");
+                }
+            }
+            logger.info(getNameForLog() + "Current post info:\n" + getCurrentStatusString(i));
+            resetCurrentPostStatus();
+            if (!moveToNextPostIfAvailable())
+                break;
+        }
+    }
+
+    private void navigateToFirstPostFromSearchResults() {
+        String rootElement = "//div[contains(text(), 'Top posts')]/../..";
+        $(By.xpath(rootElement)).shouldBe(Condition.enabled).scrollIntoView(true);
+//        sleep(getRandomViewTimeout());
+        WebElement firstPostToLike = $(By.xpath(rootElement+"//a")).shouldBe(Condition.enabled);
+        mouseMoveToElementAndClick(firstPostToLike);
     }
 
     private void addCommentToPost() throws InstaActorBreakExecutionException {
